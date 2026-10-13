@@ -13,11 +13,13 @@ The platform is being developed with software engineering best practices in mind
 
 Future iterations may introduce virtual Quran circles, teacher–student collaboration, and real-time voice sessions.
 
-> **Current implementation:** The repository currently includes an initial FastAPI backend, a health endpoint, project dependency configuration, and a basic automated test. The frontend, database integration, AI workflows, voice services, and containerized environment remain planned work.
+> **Current implementation:** The repository includes an initial FastAPI backend, a health endpoint, centralized application settings using Pydantic Settings, Python dependency configuration, and automated tests. The frontend, database integration, AI workflows, voice services, and containerized environment remain planned work.
 
 ## Core Features
 
 ### 1. Quran Reader & Tafsir
+
+Planned capabilities:
 
 - Browse Quran chapters and verses.
 - Select a verse to view its associated tafsir.
@@ -27,6 +29,8 @@ Future iterations may introduce virtual Quran circles, teacher–student collabo
 - Maintain traceability to approved Quran and tafsir sources.
 
 ### 2. AI-Assisted Memorization
+
+Planned capabilities:
 
 - Select a chapter or range of verses for memorization.
 - Capture learner recitation through a microphone.
@@ -39,6 +43,8 @@ Future iterations may introduce virtual Quran circles, teacher–student collabo
 
 ### 3. Quran Knowledge Assistant
 
+Planned capabilities:
+
 - Answer questions grounded in an approved Quran and tafsir knowledge base.
 - Retrieve relevant passages before generating responses.
 - Use Retrieval-Augmented Generation (RAG) to improve factual grounding.
@@ -47,6 +53,8 @@ Future iterations may introduce virtual Quran circles, teacher–student collabo
 - Handle unsupported questions without presenting unverified claims as facts.
 
 ### 4. User Accounts & Progress
+
+Planned capabilities:
 
 - User registration and login.
 - Secure authentication and protected endpoints.
@@ -66,19 +74,20 @@ Future iterations may introduce virtual Quran circles, teacher–student collabo
 
 The following is the intended technology stack. Not every component has been integrated into the current implementation.
 
-| Component | Technology |
-|---|---|
-| Frontend | React, TypeScript, Vite — planned |
-| Backend API | Python, FastAPI — initial implementation |
-| AI workflows | LangGraph — planned |
-| Database | MongoDB, Beanie — planned |
-| Voice infrastructure | LiveKit, modular voice pipeline — planned |
-| Background processing | Celery, Redis — planned |
-| API documentation | OpenAPI, Swagger UI — available through FastAPI |
-| Testing | pytest |
-| Code quality | Ruff, Black |
-| Containerization | Docker, Docker Compose — planned |
-| Continuous integration | GitHub Actions — planned |
+| Component | Technology | Status |
+|---|---|---|
+| Frontend | React, TypeScript, Vite | Planned |
+| Backend API | Python, FastAPI | Initial implementation |
+| Application configuration | Pydantic Settings | Implemented |
+| AI workflows | LangGraph | Planned |
+| Database | MongoDB, Beanie | Planned |
+| Voice infrastructure | LiveKit, modular voice pipeline | Planned |
+| Background processing | Celery, Redis | Planned |
+| API documentation | OpenAPI, Swagger UI | Available through FastAPI |
+| Testing | pytest | Initial tests implemented |
+| Code quality | Ruff, Black | Configured |
+| Containerization | Docker, Docker Compose | Planned |
+| Continuous integration | GitHub Actions | Planned |
 
 The stack may evolve as implementation requirements and integration tests clarify the best approach.
 
@@ -89,36 +98,39 @@ The project follows a modular architecture that separates user-facing APIs, busi
 The intended repository structure is:
 
 ```text
-quran-ai-platform/
-├── frontend/
+Quran-AI-Platform/
+├── frontend/                  # Planned
 ├── backend/
 │   ├── app/
-│   │   └── main.py
+│   │   ├── main.py            # FastAPI application
+│   │   └── config.py          # Application settings
 │   └── tests/
-│       └── test_main.py
-├── ai_service/             # Planned
-├── voice_service/          # Planned
-├── infra/                  # Planned
+│       ├── test_main.py       # Health endpoint tests
+│       └── test_config.py     # Configuration tests
+├── ai_service/                # Planned
+├── voice_service/             # Planned
+├── infra/                     # Planned
 ├── docs/
-├── tests/                  # Planned cross-component tests
+├── tests/                     # Planned cross-component tests
 ├── .github/
-│   └── workflows/          # CI workflow planned
-├── pyproject.toml
+│   └── workflows/             # CI workflow planned
+├── .env.example
 ├── .gitignore
+├── pyproject.toml
 └── README.md
 ```
+
+This is a conceptual overview of the repository. Directories marked as planned may not exist yet.
 
 ### Component Responsibilities
 
 - `frontend/` — User interface, feature components, API integration, and client-side state.
-- `backend/` — REST API, authentication integration, application services, domain logic, and persistence.
+- `backend/` — REST API, application services, domain logic, authentication integration, and persistence.
 - `ai_service/` — LangGraph workflows, retrieval, prompt management, LLM adapters, and AI evaluation.
 - `voice_service/` — Audio session management, speech processing, recitation assessment, and real-time voice integration.
 - `infra/` — Dockerfiles, local infrastructure configuration, and deployment-related resources.
 - `docs/` — Architecture decisions, development conventions, API contracts, and technical documentation.
 - `tests/` — Cross-component tests and shared evaluation scenarios.
-
-The directories marked as planned describe the intended architecture, not necessarily existing directories or implemented functionality.
 
 The initial deployment may run these components in a single development environment using Docker Compose. Separate deployment and scaling can be introduced when justified by actual operational needs.
 
@@ -134,9 +146,9 @@ The initial deployment may run these components in a single development environm
 
 ### Separation of Concerns
 
-- API handlers must not contain complex business logic.
+- API handlers should not contain complex business logic.
 - Application services coordinate use cases.
-- Repository interfaces isolate persistence concerns.
+- Repository interfaces isolate persistence concerns when needed.
 - Infrastructure adapters encapsulate external services.
 - AI workflows remain separate from ordinary application logic.
 
@@ -156,8 +168,8 @@ Patterns should improve maintainability and testability, not add unnecessary lay
 
 - Write unit tests for new business logic.
 - Add integration tests for database and external-service boundaries.
-- Test API validation, authentication, and authorization.
-- Evaluate RAG retrieval quality and answer grounding.
+- Test API validation, authentication, and authorization as these features are introduced.
+- Evaluate RAG retrieval quality and answer grounding when the AI assistant is implemented.
 - Test recitation comparison independently from speech recognition.
 - Enforce linting and formatting through CI when the CI workflow is introduced.
 
@@ -165,13 +177,13 @@ Patterns should improve maintainability and testability, not add unnecessary lay
 
 The repository uses Ruff and Black for Python code quality and pytest for automated tests.
 
+Run the following commands from the repository root with the project virtual environment activated:
+
 ```bash
 python -m ruff check .
 python -m black --check backend/app backend/tests
 python -m pytest -v
 ```
-
-Run these commands from the repository root with the project virtual environment activated.
 
 To apply formatting or automatic lint fixes:
 
@@ -184,13 +196,17 @@ Review automatic fixes before committing.
 
 ## Configuration & Security
 
-- Load configuration from environment variables when application settings are introduced.
-- Validate required settings at application startup.
-- Keep credentials and secrets out of source control.
-- Use secure password hashing and appropriate token/session handling.
-- Enforce user-level authorization on protected resources.
-- Avoid logging passwords, tokens, or sensitive audio content.
-- Review and maintain dependency constraints as the project matures.
+Application settings are centralized in `backend/app/config.py` using Pydantic Settings.
+
+- Environment variables use the `QURAN_AI_` prefix.
+- Available settings are `app_name`, `app_version`, `environment`, and `debug`.
+- Default values allow the API to start without a local `.env` file or secrets.
+- `.env.example` documents the supported local configuration.
+- A local `.env` file can override default settings and must not be committed.
+- Never store credentials, API keys, or other secrets in `.env.example`.
+- The `environment` setting is currently configuration-only; environment-specific behavior has not been implemented.
+- Authentication, authorization, secure password handling, and sensitive-data logging safeguards remain future work.
+- Dependency constraints should be reviewed and maintained as the project matures.
 
 ## Prerequisites
 
@@ -216,6 +232,8 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
+If the virtual environment already exists, activate it rather than creating it again.
+
 ### 3. Install the Project and Development Dependencies
 
 ```bash
@@ -223,9 +241,28 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
-The editable installation installs the project and its declared development dependencies, including FastAPI, Uvicorn, pytest, Ruff, Black, and HTTPX.
+The editable installation installs the project and its declared development dependencies, including FastAPI, Uvicorn, Pydantic Settings, pytest, Ruff, Black, and HTTPX.
 
-### 4. Start the Backend API
+### 4. Configure Environment Variables (Optional)
+
+Create a local `.env` file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` to override the defaults if needed.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `QURAN_AI_APP_NAME` | `Quran AI Platform API` | FastAPI application title |
+| `QURAN_AI_APP_VERSION` | `0.1.0` | API version |
+| `QURAN_AI_ENVIRONMENT` | `development` | Environment label: `development`, `testing`, or `production` |
+| `QURAN_AI_DEBUG` | `false` | FastAPI debug mode |
+
+This step is optional. Do not commit your local `.env` file.
+
+### 5. Start the Backend API
 
 From the repository root:
 
@@ -239,7 +276,7 @@ The default port is `8000`. If it is already occupied, choose an available port:
 python -m uvicorn app.main:app --app-dir backend --reload --port 8003
 ```
 
-### 5. Verify the API
+### 6. Verify the API
 
 With the server running, open the following addresses. Replace port `8000` if you selected a different port.
 
@@ -255,11 +292,11 @@ The health endpoint should return:
 }
 ```
 
-### 6. Stop the Development Server
+### 7. Stop the Development Server
 
 Press `Ctrl+C` in the terminal running Uvicorn.
 
-> Docker Compose commands and frontend instructions will be added when the corresponding configuration and components are implemented.
+Docker Compose commands and frontend instructions will be added when the corresponding configuration and components are implemented.
 
 ## Development Workflow
 
@@ -360,9 +397,11 @@ The architecture should not assume that transcription alone can reliably assess 
 - [x] Initial FastAPI application and health endpoint.
 - [x] Python project and development dependency configuration.
 - [x] Initial health endpoint test.
+- [x] Centralized application settings with Pydantic Settings.
+- [x] Environment variable configuration example.
+- [ ] Structured logging and error handling.
 - [ ] Docker Compose environment.
 - [ ] MongoDB integration.
-- [ ] Configuration, logging, and error handling.
 - [ ] CI checks and expanded tests.
 
 ### Phase 2 — Core Application

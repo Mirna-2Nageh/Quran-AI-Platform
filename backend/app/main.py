@@ -1,9 +1,14 @@
 from fastapi import FastAPI
 
+from app.config import get_settings
+
+settings = get_settings()
+
 app = FastAPI(
-    title="Quran AI Platform API",
+    title=settings.app_name,
     description="Backend API for the Quran AI learning platform.",
-    version="0.1.0",
+    version=settings.app_version,
+    debug=settings.debug,
 )
 
 
