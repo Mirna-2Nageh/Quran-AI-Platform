@@ -1,286 +1,370 @@
-Quran AI Platform
+# Quran AI Platform
 
 An AI-powered Quran learning platform designed to help learners read, understand, memorize, and practice Quran recitation through intelligent, source-grounded assistance.
 
-Project Status: In Development
-Architecture: Modular Monolith with independently organized AI and Voice components.
+**Project Status:** In Development
+**Architecture:** Modular Monolith with independently organized AI and Voice components.
 
-Overview
+## Overview
 
 Quran AI Platform aims to provide an integrated Quran learning experience by combining a Quran reader, verse-level tafsir, AI-assisted memorization, and a retrieval-augmented knowledge assistant.
 
-The platform is designed with software engineering best practices in mind, including separation of concerns, clean code, automated testing, containerized development, and maintainable architecture.
+The platform is being developed with software engineering best practices in mind, including separation of concerns, clean code, automated testing, maintainable architecture, and reproducible development workflows.
 
 Future iterations may introduce virtual Quran circles, teacher–student collaboration, and real-time voice sessions.
 
-Core Features
+> **Current implementation:** The repository includes an initial FastAPI backend, a health endpoint, centralized application settings using Pydantic Settings, Python dependency configuration, and automated tests. The frontend, database integration, AI workflows, voice services, and containerized environment remain planned work.
 
-1. Quran Reader & Tafsir
+## Core Features
 
-* Browse Quran chapters and verses.
-* Select a verse to view its associated tafsir.
-* Navigate between chapters and verses.
-* Bookmark verses and track reading progress.
-* Support Arabic text and right-to-left layouts.
-* Maintain traceability to approved Quran and tafsir sources.
+### 1. Quran Reader & Tafsir
 
-2. AI-Assisted Memorization
+Planned capabilities:
 
-* Select a chapter or range of verses for memorization.
-* Capture learner recitation through a microphone.
-* Transcribe recitation using a speech recognition component.
-* Compare the transcription against the target verses.
-* Identify potential omissions, substitutions, and additional words.
-* Display correction feedback and track memorization progress.
+- Browse Quran chapters and verses.
+- Select a verse to view its associated tafsir.
+- Navigate between chapters and verses.
+- Bookmark verses and track reading progress.
+- Support Arabic text and right-to-left layouts.
+- Maintain traceability to approved Quran and tafsir sources.
 
-Scope note: Text-based comparison is not equivalent to a complete Tajweed assessment. Accurate evaluation of pronunciation, articulation, and recitation rules requires specialized audio analysis and appropriate validation.
+### 2. AI-Assisted Memorization
 
-3. Quran Knowledge Assistant
+Planned capabilities:
 
-* Answer questions grounded in an approved Quran and tafsir knowledge base.
-* Retrieve relevant passages before generating responses.
-* Use Retrieval-Augmented Generation (RAG) to improve factual grounding.
-* Organize AI workflows using LangGraph.
-* Provide source references for generated answers.
-* Handle unsupported questions without presenting unverified claims as facts.
+- Select a chapter or range of verses for memorization.
+- Capture learner recitation through a microphone.
+- Transcribe recitation using a speech recognition component.
+- Compare the transcription against the target verses.
+- Identify potential omissions, substitutions, and additional words.
+- Display correction feedback and track memorization progress.
 
-4. User Accounts & Progress
+**Scope note:** Text-based comparison is not equivalent to a complete Tajweed assessment. Accurate evaluation of pronunciation, articulation, and recitation rules requires specialized audio analysis and appropriate validation.
 
-* User registration and login.
-* Secure authentication and protected endpoints.
-* Personal bookmarks and reading history.
-* Memorization progress tracking.
-* User-specific learning data and preferences.
+### 3. Quran Knowledge Assistant
 
-5. Quran Circles — Planned
+Planned capabilities:
 
-* Create and manage Quran learning circles.
-* Assign students to teachers and learning groups.
-* Schedule sessions and track attendance.
-* Monitor individual memorization progress.
-* Support real-time audio sessions where required.
+- Answer questions grounded in an approved Quran and tafsir knowledge base.
+- Retrieve relevant passages before generating responses.
+- Use Retrieval-Augmented Generation (RAG) to improve factual grounding.
+- Organize AI workflows using LangGraph.
+- Provide source references for generated answers.
+- Handle unsupported questions without presenting unverified claims as facts.
 
-Technology Stack
+### 4. User Accounts & Progress
 
-Component	Technology
-Frontend	React, TypeScript, Vite
-Backend API	Python, FastAPI
-AI workflows	LangGraph
-Database	MongoDB, Beanie
-Voice infrastructure	LiveKit, with a modular voice pipeline
-Background processing	Celery, Redis
-API documentation	OpenAPI, Swagger UI
-Testing	pytest, frontend testing tools
-Code quality	Ruff, Black, frontend linting and formatting
-Containerization	Docker, Docker Compose
-Continuous integration	GitHub Actions
+Planned capabilities:
+
+- User registration and login.
+- Secure authentication and protected endpoints.
+- Personal bookmarks and reading history.
+- Memorization progress tracking.
+- User-specific learning data and preferences.
+
+### 5. Quran Circles — Planned
+
+- Create and manage Quran learning circles.
+- Assign students to teachers and learning groups.
+- Schedule sessions and track attendance.
+- Monitor individual memorization progress.
+- Support real-time audio sessions where required.
+
+## Technology Stack
+
+The following is the intended technology stack. Not every component has been integrated into the current implementation.
+
+| Component | Technology | Status |
+|---|---|---|
+| Frontend | React, TypeScript, Vite | Planned |
+| Backend API | Python, FastAPI | Initial implementation |
+| Application configuration | Pydantic Settings | Implemented |
+| AI workflows | LangGraph | Planned |
+| Database | MongoDB, Beanie | Planned |
+| Voice infrastructure | LiveKit, modular voice pipeline | Planned |
+| Background processing | Celery, Redis | Planned |
+| API documentation | OpenAPI, Swagger UI | Available through FastAPI |
+| Testing | pytest | Initial tests implemented |
+| Code quality | Ruff, Black | Configured |
+| Containerization | Docker, Docker Compose | Planned |
+| Continuous integration | GitHub Actions | Planned |
 
 The stack may evolve as implementation requirements and integration tests clarify the best approach.
 
-Architecture
+## Architecture
 
 The project follows a modular architecture that separates user-facing APIs, business logic, data access, AI orchestration, and voice processing.
 
-quran-ai-platform/
-├── frontend/
+The intended repository structure is:
+
+```text
+Quran-AI-Platform/
+├── frontend/                  # Planned
 ├── backend/
-├── ai_service/
-├── voice_service/
-├── infra/
+│   ├── app/
+│   │   ├── main.py            # FastAPI application
+│   │   └── config.py          # Application settings
+│   └── tests/
+│       ├── test_main.py       # Health endpoint tests
+│       └── test_config.py     # Configuration tests
+├── ai_service/                # Planned
+├── voice_service/             # Planned
+├── infra/                     # Planned
 ├── docs/
-├── tests/
+├── tests/                     # Planned cross-component tests
 ├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── docker-compose.yml
+│   └── workflows/             # CI workflow planned
 ├── .env.example
 ├── .gitignore
+├── pyproject.toml
 └── README.md
+```
 
-Component Responsibilities
+This is a conceptual overview of the repository. Directories marked as planned may not exist yet.
 
-* frontend/ — User interface, feature components, API integration, and client-side state.
-* backend/ — REST API, authentication integration, application services, domain logic, and persistence.
-* ai_service/ — LangGraph workflows, retrieval, prompt management, LLM adapters, and AI evaluation.
-* voice_service/ — Audio session management, speech processing, recitation assessment, and real-time voice integration.
-* infra/ — Dockerfiles, local infrastructure configuration, and deployment-related resources.
-* docs/ — Architecture decisions, development conventions, API contracts, and technical documentation.
-* tests/ — Cross-component tests and shared evaluation scenarios.
+### Component Responsibilities
+
+- `frontend/` — User interface, feature components, API integration, and client-side state.
+- `backend/` — REST API, application services, domain logic, authentication integration, and persistence.
+- `ai_service/` — LangGraph workflows, retrieval, prompt management, LLM adapters, and AI evaluation.
+- `voice_service/` — Audio session management, speech processing, recitation assessment, and real-time voice integration.
+- `infra/` — Dockerfiles, local infrastructure configuration, and deployment-related resources.
+- `docs/` — Architecture decisions, development conventions, API contracts, and technical documentation.
+- `tests/` — Cross-component tests and shared evaluation scenarios.
 
 The initial deployment may run these components in a single development environment using Docker Compose. Separate deployment and scaling can be introduced when justified by actual operational needs.
 
-Engineering Principles
+## Engineering Principles
 
-Clean Code
+### Clean Code
 
-* Keep functions small and focused on a single responsibility.
-* Use descriptive names and consistent conventions.
-* Prefer explicit control flow over unnecessary abstractions.
-* Keep business logic independent of framework-specific details where practical.
-* Document important decisions rather than obvious implementation details.
+- Keep functions small and focused on a single responsibility.
+- Use descriptive names and consistent conventions.
+- Prefer explicit control flow over unnecessary abstractions.
+- Keep business logic independent of framework-specific details where practical.
+- Document important decisions rather than obvious implementation details.
 
-Separation of Concerns
+### Separation of Concerns
 
-* API handlers must not contain complex business logic.
-* Application services coordinate use cases.
-* Repository interfaces isolate persistence concerns.
-* Infrastructure adapters encapsulate external services.
-* AI workflows remain separate from ordinary application logic.
+- API handlers should not contain complex business logic.
+- Application services coordinate use cases.
+- Repository interfaces isolate persistence concerns when needed.
+- Infrastructure adapters encapsulate external services.
+- AI workflows remain separate from ordinary application logic.
 
-Design Patterns
+### Design Patterns
 
 Apply design patterns when they solve a demonstrated problem:
 
-* Repository Pattern: Isolate persistence operations behind clear interfaces.
-* Dependency Injection: Supply service dependencies explicitly.
-* Adapter Pattern: Standardize integrations with LLM, STT, and TTS providers.
-* Strategy Pattern: Support interchangeable retrieval, transcription, or assessment strategies when needed.
-* Factory Pattern: Centralize construction of complex dependencies where useful.
+- **Repository Pattern:** Isolate persistence operations behind clear interfaces.
+- **Dependency Injection:** Supply service dependencies explicitly.
+- **Adapter Pattern:** Standardize integrations with LLM, STT, and TTS providers.
+- **Strategy Pattern:** Support interchangeable retrieval, transcription, or assessment strategies when needed.
+- **Factory Pattern:** Centralize construction of complex dependencies where useful.
 
 Patterns should improve maintainability and testability, not add unnecessary layers.
 
-Testing & Code Quality
+## Testing & Code Quality
 
-* Write unit tests for new business logic.
-* Add integration tests for database and external-service boundaries.
-* Test API validation, authentication, and authorization.
-* Evaluate RAG retrieval quality and answer grounding.
-* Test recitation comparison independently from speech recognition.
-* Enforce linting and formatting through CI.
+- Write unit tests for new business logic.
+- Add integration tests for database and external-service boundaries.
+- Test API validation, authentication, and authorization as these features are introduced.
+- Evaluate RAG retrieval quality and answer grounding when the AI assistant is implemented.
+- Test recitation comparison independently from speech recognition.
+- Enforce linting and formatting through CI when the CI workflow is introduced.
 
-Configuration & Security
+### Current Python Quality Checks
 
-* Load configuration from environment variables.
-* Validate required settings at application startup.
-* Keep credentials and secrets out of source control.
-* Use secure password hashing and appropriate token/session handling.
-* Enforce user-level authorization on protected resources.
-* Avoid logging passwords, tokens, or sensitive audio content.
-* Pin and review dependencies as the project matures.
+The repository uses Ruff and Black for Python code quality and pytest for automated tests.
 
-Prerequisites
+Run the following commands from the repository root with the project virtual environment activated:
 
-* Docker Engine
-* Docker Compose v2
-* Git
-* An internet connection for downloading dependencies and container images
+```bash
+python -m ruff check .
+python -m black --check backend/app backend/tests
+python -m pytest -v
+```
 
-Local Python and Node.js installations are not required when all development commands are executed inside the appropriate containers.
+To apply formatting or automatic lint fixes:
 
-Getting Started
+```bash
+python -m black backend/app backend/tests
+python -m ruff check . --fix
+```
 
-1. Clone the Repository
+Review automatic fixes before committing.
 
-git clone <YOUR_REPOSITORY_URL>
-cd quran-ai-platform
+## Configuration & Security
 
-2. Configure Environment Variables
+Application settings are centralized in `backend/app/config.py` using Pydantic Settings.
 
+- Environment variables use the `QURAN_AI_` prefix.
+- Available settings are `app_name`, `app_version`, `environment`, and `debug`.
+- Default values allow the API to start without a local `.env` file or secrets.
+- `.env.example` documents the supported local configuration.
+- A local `.env` file can override default settings and must not be committed.
+- Never store credentials, API keys, or other secrets in `.env.example`.
+- The `environment` setting is currently configuration-only; environment-specific behavior has not been implemented.
+- Authentication, authorization, secure password handling, and sensitive-data logging safeguards remain future work.
+- Dependency constraints should be reviewed and maintained as the project matures.
+
+## Prerequisites
+
+- Python 3.10 or later, below Python 3.14.
+- Git.
+- Internet access to install Python dependencies.
+
+Docker and Docker Compose are not required for the current backend-only setup.
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Mirna-2Nageh/Quran-AI-Platform.git
+cd Quran-AI-Platform
+```
+
+### 2. Create and Activate a Virtual Environment
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+If the virtual environment already exists, activate it rather than creating it again.
+
+### 3. Install the Project and Development Dependencies
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+The editable installation installs the project and its declared development dependencies, including FastAPI, Uvicorn, Pydantic Settings, pytest, Ruff, Black, and HTTPX.
+
+### 4. Configure Environment Variables (Optional)
+
+Create a local `.env` file from the example:
+
+```bash
 cp .env.example .env
+```
 
-Update the local configuration according to the documented variables.
+Edit `.env` to override the defaults if needed.
 
-Do not commit .env or any real credentials.
+| Variable | Default | Purpose |
+|---|---|---|
+| `QURAN_AI_APP_NAME` | `Quran AI Platform API` | FastAPI application title |
+| `QURAN_AI_APP_VERSION` | `0.1.0` | API version |
+| `QURAN_AI_ENVIRONMENT` | `development` | Environment label: `development`, `testing`, or `production` |
+| `QURAN_AI_DEBUG` | `false` | FastAPI debug mode |
 
-3. Build and Start the Services
+This step is optional. Do not commit your local `.env` file.
 
-docker compose up --build -d
+### 5. Start the Backend API
 
-4. Check Service Status
+From the repository root:
 
-docker compose ps
-docker compose logs -f
+```bash
+python -m uvicorn app.main:app --app-dir backend --reload
+```
 
-Verify that the required containers are running and healthy before using the application.
+The default port is `8000`. If it is already occupied, choose an available port:
 
-5. Access the Application
+```bash
+python -m uvicorn app.main:app --app-dir backend --reload --port 8003
+```
 
-The following addresses are proposed development defaults. Actual ports will be defined in the Docker Compose configuration.
+### 6. Verify the API
 
-* Frontend: http://localhost:5173
-* Backend API: http://localhost:8000
-* Swagger UI: http://localhost:8000/docs
-* ReDoc: http://localhost:8000/redoc
+With the server running, open the following addresses. Replace port `8000` if you selected a different port.
 
-6. Stop the Services
+- **Health check:** http://127.0.0.1:8000/health
+- **Swagger UI:** http://127.0.0.1:8000/docs
+- **ReDoc:** http://127.0.0.1:8000/redoc
 
-docker compose down
+The health endpoint should return:
 
-To remove local Compose-managed volumes as well, use:
+```json
+{
+  "status": "ok"
+}
+```
 
-docker compose down -v
+### 7. Stop the Development Server
 
-Warning: Removing volumes can permanently delete local database data. Use this command only when that is intended.
+Press `Ctrl+C` in the terminal running Uvicorn.
 
-Development Workflow
+Docker Compose commands and frontend instructions will be added when the corresponding configuration and components are implemented.
 
-Code Quality
+## Development Workflow
 
-Python code follows the repository’s Ruff and Black configuration.
+### Code Quality
 
-ruff check .
-black --check .
-pytest
+Before committing Python changes, run:
 
-These commands should run in the backend development environment, with the required tools installed.
+```bash
+python -m ruff check .
+python -m black --check backend/app backend/tests
+python -m pytest -v
+git diff --check
+```
 
-Apply formatting when necessary:
+Apply formatting when necessary and review all resulting changes.
 
-black .
-ruff check . --fix
+### Git Workflow
 
-Automated fixes must be reviewed before committing.
-
-Git Workflow
-
-* Create focused feature branches.
-* Keep commits small and descriptive.
-* Open pull requests for review.
-* Run relevant tests before merging.
-* Avoid committing generated files, secrets, local databases, or temporary artifacts.
+- Create focused feature branches.
+- Keep commits small and descriptive.
+- Open pull requests for review.
+- Run relevant tests before merging.
+- Avoid committing generated files, secrets, local databases, or temporary artifacts.
 
 Example branch names:
 
+```text
 feat/quran-reader
 feat/tafsir-integration
 feat/authentication
 feat/recitation-feedback
 feat/knowledge-assistant
 test/rag-evaluation
+```
 
-Definition of Done
+## Definition of Done
 
 A change is ready to merge when:
 
-* Its scope and acceptance criteria are satisfied.
-* Relevant tests have been added and pass.
-* Linting and formatting checks pass.
-* API contracts and documentation are updated where necessary.
-* Errors and edge cases are handled appropriately.
-* No secrets or private data are introduced.
-* The implementation follows the established architecture and conventions.
+- Its scope and acceptance criteria are satisfied.
+- Relevant tests have been added and pass.
+- Linting and formatting checks pass.
+- API contracts and documentation are updated where necessary.
+- Errors and edge cases are handled appropriately.
+- No secrets or private data are introduced.
+- The implementation follows established architecture and conventions.
 
-Data & Knowledge Base
+## Data & Knowledge Base
 
 The Quran reader, tafsir functionality, and AI assistant depend on trustworthy source material.
 
 The data pipeline should preserve:
 
-* Source identity and licensing information.
-* Chapter and verse identifiers.
-* Tafsir attribution and edition metadata.
-* Document provenance and ingestion timestamps.
-* Stable references from generated answers to retrieved passages.
+- Source identity and licensing information.
+- Chapter and verse identifiers.
+- Tafsir attribution and edition metadata.
+- Document provenance and ingestion timestamps.
+- Stable references from generated answers to retrieved passages.
 
 Quran text must be obtained from an appropriate authoritative source. Generative models must not be treated as the source of truth for Quranic text or tafsir.
 
 The knowledge ingestion and indexing process should be reproducible and independently testable.
 
-AI & Voice Design
+## AI & Voice Design
 
-Retrieval-Augmented Generation
+### Retrieval-Augmented Generation
 
-The AI assistant follows a retrieval-first approach:
+The planned AI assistant follows a retrieval-first approach:
 
 1. Receive and validate a question.
 2. Retrieve relevant passages from the approved knowledge base.
@@ -288,11 +372,11 @@ The AI assistant follows a retrieval-first approach:
 4. Generate an answer grounded in the retrieved context.
 5. Return the answer with available source references.
 
-LangGraph is used to organize the workflow, control transitions, and support error handling and evaluation.
+LangGraph is intended to organize the workflow, control transitions, and support error handling and evaluation.
 
-Voice Processing
+### Voice Processing
 
-The voice pipeline is designed around replaceable components:
+The planned voice pipeline is designed around replaceable components:
 
 1. Capture audio.
 2. Process incoming audio.
@@ -305,48 +389,53 @@ LiveKit can provide real-time audio session infrastructure. Speech recognition a
 
 The architecture should not assume that transcription alone can reliably assess Tajweed or all pronunciation errors.
 
-Roadmap
+## Roadmap
 
-Phase 1 — Project Foundation
+### Phase 1 — Project Foundation
 
-* Repository structure and development conventions.
-* Docker Compose environment.
-* FastAPI application and MongoDB integration.
-* Configuration, logging, and error handling.
-* CI checks and initial tests.
+- [x] Repository development conventions.
+- [x] Initial FastAPI application and health endpoint.
+- [x] Python project and development dependency configuration.
+- [x] Initial health endpoint test.
+- [x] Centralized application settings with Pydantic Settings.
+- [x] Environment variable configuration example.
+- [ ] Structured logging and error handling.
+- [ ] Docker Compose environment.
+- [ ] MongoDB integration.
+- [ ] CI checks and expanded tests.
 
-Phase 2 — Core Application
+### Phase 2 — Core Application
 
-* Authentication and protected routes.
-* Quran reader and tafsir integration.
-* User bookmarks and reading progress.
-* Initial frontend-to-backend integration.
+- [ ] Authentication and protected routes.
+- [ ] Quran reader and tafsir integration.
+- [ ] User bookmarks and reading progress.
+- [ ] Initial frontend-to-backend integration.
 
-Phase 3 — AI Knowledge Assistant
+### Phase 3 — AI Knowledge Assistant
 
-* Knowledge ingestion pipeline.
-* Retrieval and indexing.
-* LangGraph orchestration.
-* Source-grounded answers.
-* Retrieval and answer-quality evaluation.
+- [ ] Knowledge ingestion pipeline.
+- [ ] Retrieval and indexing.
+- [ ] LangGraph orchestration.
+- [ ] Source-grounded answers.
+- [ ] Retrieval and answer-quality evaluation.
 
-Phase 4 — Memorization & Voice
+### Phase 4 — Memorization & Voice
 
-* Audio capture and transcription.
-* Verse alignment and text comparison.
-* Structured correction feedback.
-* Voice pipeline evaluation.
-* LiveKit integration where needed.
+- [ ] Audio capture and transcription.
+- [ ] Verse alignment and text comparison.
+- [ ] Structured correction feedback.
+- [ ] Voice pipeline evaluation.
+- [ ] LiveKit integration where needed.
 
-Phase 5 — Quran Circles
+### Phase 5 — Quran Circles
 
-* Teacher and student roles.
-* Circle and membership management.
-* Scheduling and attendance.
-* Progress reports.
-* Real-time learning sessions.
+- [ ] Teacher and student roles.
+- [ ] Circle and membership management.
+- [ ] Scheduling and attendance.
+- [ ] Progress reports.
+- [ ] Real-time learning sessions.
 
-Contributing
+## Contributing
 
 Contributions should follow the established coding conventions and architecture.
 
@@ -358,10 +447,10 @@ Before submitting a pull request:
 4. Update documentation when behavior or configuration changes.
 5. Confirm that the change does not introduce unnecessary dependencies or abstractions.
 
-License
+## License
 
-The project’s license and distribution terms will be defined before public release. Third-party datasets, Quran text, tafsir content, and model assets remain subject to their respective licenses and usage conditions.
+The project's license and distribution terms will be defined before public release. Third-party datasets, Quran text, tafsir content, and model assets remain subject to their respective licenses and usage conditions.
 
-⸻
+---
 
-Disclaimer: This platform is an educational tool. AI-generated explanations and recitation feedback should not replace qualified scholarly guidance or a qualified Quran teacher.
+**Disclaimer:** This platform is an educational tool. AI-generated explanations and recitation feedback should not replace qualified scholarly guidance or a qualified Quran teacher.
