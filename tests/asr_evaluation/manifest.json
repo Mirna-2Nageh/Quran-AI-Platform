@@ -1,0 +1,56 @@
+[
+  {
+    "id": "001002",
+    "audio": "tests/audio_samples/fatiha_benchmark/001002.wav",
+    "surah": 1,
+    "ayah": 2,
+    "reference": "الحمد لله رب العالمين",
+    "verified": true,
+    "verification_note": "Human-confirmed: reciter pronounced al-aalameen with the long vowel; ASR omitted the alef."
+  },
+  {
+    "id": "001003",
+    "audio": "tests/audio_samples/fatiha_benchmark/001003.wav",
+    "surah": 1,
+    "ayah": 3,
+    "reference": "الرحمن الرحيم",
+    "verified": true,
+    "verification_note": "Human-confirmed complete recitation: Ar-Rahman Ar-Raheem."
+  },
+  {
+    "id": "001004",
+    "audio": "tests/audio_samples/fatiha_benchmark/001004.wav",
+    "surah": 1,
+    "ayah": 4,
+    "reference": "مالك يوم الدين",
+    "verified": true,
+    "verification_note": "Human-confirmed audio: Maaliki yawmi d-deen"
+  },
+  {
+    "id": "001005",
+    "audio": "tests/audio_samples/fatiha_benchmark/001005.wav",
+    "surah": 1,
+    "ayah": 5,
+    "reference": "إياك نعبد وإياك نستعين",
+    "verified": true,
+    "verification_note": "Human-confirmed complete recitation; ASR differences are hamza orthography only."
+  },
+  {
+    "id": "001006",
+    "audio": "tests/audio_samples/fatiha_benchmark/001006.wav",
+    "surah": 1,
+    "ayah": 6,
+    "reference": "اهدنا الصراط المستقيم",
+    "verified": true,
+    "verification_note": "Human-confirmed: reciter pronounced الصراط with the long vowel; ASR output was الصرط."
+  },
+  {
+    "id": "001007",
+    "audio": "tests/audio_samples/fatiha_benchmark/001007.wav",
+    "surah": 1,
+    "ayah": 7,
+    "reference": "صراط الذين أنعمت عليهم غير المغضوب عليهم ولا الضالين",
+    "verified": true,
+    "verification_note": "Human-confirmed complete recitation; ASR omitted alef in صراط."
+  }
+]

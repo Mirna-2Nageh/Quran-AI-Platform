@@ -149,3 +149,69 @@ def test_normalization_preserves_original_text_in_alignment():
     assert len(result.issues) == 1
     assert result.issues[0].expected_word == expected
     assert result.issues[0].recognized_word == recognized
+
+
+def test_uthmani_alameen_matches_standard_arabic():
+    expected = "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ"
+    recognized = "الحمد لله رب العالمين"
+
+    result = align_words(expected, recognized)
+
+    assert result.expected_word_count == 4
+    assert result.recognized_word_count == 4
+    assert result.matched_word_count == 4
+    assert result.issues == []
+
+
+def test_uthmani_alameen_still_detects_missing_word():
+    expected = "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ"
+    recognized = "الحمد لله العالمين"
+
+    result = align_words(expected, recognized)
+
+    assert result.matched_word_count == 3
+    assert len(result.issues) == 1
+    assert result.issues[0].operation == "deletion"
+    assert normalize_arabic_word(result.issues[0].expected_word) == "رب"
+
+
+def test_farsi_yeh_normalizes_to_arabic_yeh():
+    assert normalize_arabic_word("ی") == normalize_arabic_word("ي")
+
+
+def test_actual_quran_api_uthmani_text_matches_standard_arabic():
+    expected = "ٱلۡحَمۡدُ لِلَّهِ رَبِّ ٱلۡعَـٰلَمِینَ\n"
+    recognized = "الحمد لله رب العالمين"
+
+    result = align_words(expected, recognized)
+
+    assert result.expected_word_count == 4
+    assert result.recognized_word_count == 4
+    assert result.matched_word_count == 4
+    assert result.issues == []
+
+
+def test_uthmani_sirat_matches_standard_arabic():
+    expected = "صِرَٰطَ"
+    recognized = "صراط"
+
+    assert normalize_arabic_word(expected) == normalize_arabic_word(
+        recognized
+    )
+
+
+def test_fatiha_seventh_ayah_uthmani_alignment():
+    expected = (
+        "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ "
+        "غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ"
+    )
+    recognized = (
+        "صراط الذين انعمت عليهم غير المغضوب عليهم ولا الضالين"
+    )
+
+    result = align_words(expected, recognized)
+
+    assert result.expected_word_count == 9
+    assert result.recognized_word_count == 9
+    assert result.matched_word_count == 9
+    assert result.issues == []
