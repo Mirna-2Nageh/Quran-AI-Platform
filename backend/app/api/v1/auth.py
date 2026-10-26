@@ -141,6 +141,37 @@ async def me(
     return user_response(user)
 
 
+@router.get("/csrf")
+async def csrf(
+    request: Request,
+    service: AuthService = Depends(get_auth_service),
+):
+    check_origin(request)
+
+    token = request.cookies.get(COOKIE_NAME)
+
+    user = await service.get_current_user(token)
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+        )
+
+    csrf_token = await service.refresh_csrf(token)
+
+    if csrf_token is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired",
+        )
+
+    response = JSONResponse({"message": "CSRF token refreshed"})
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["X-CSRF-Token"] = csrf_token
+
+    return response
+
+
 @router.post("/logout")
 async def logout(
     request: Request,

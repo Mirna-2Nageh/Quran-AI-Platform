@@ -64,3 +64,20 @@ logs/
 Thumbs.db
 .env.mongo
 .env.mongo.app
+
+# Local Quran ASR environment
+.venv-asr/
+
+# Downloaded ASR model weights and cache
+models/**/*.onnx
+models/**/.cache/
+
+# Regenerable ASR evaluation outputs
+tests/asr_evaluation/results/latest.json
+tests/asr_evaluation/results/latest.csv
+
+# Local editor backup files
+*.bak
+
+# Local audio recordings and benchmark samples
+tests/audio_samples/

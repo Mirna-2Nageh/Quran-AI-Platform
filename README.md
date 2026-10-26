@@ -5,6 +5,10 @@ An AI-powered Quran learning platform designed to help learners read, understand
 **Project Status:** In Development
 **Architecture:** Modular Monolith with independently organized AI and Voice components.
 
+## Current Implementation
+
+See [Current Implementation](docs/current-implementation.md) for the implemented features, local setup, ASR model, and tests.
+
 ## Overview
 
 Quran AI Platform aims to provide an integrated Quran learning experience by combining a Quran reader, verse-level tafsir, AI-assisted memorization, and a retrieval-augmented knowledge assistant.
@@ -449,7 +453,7 @@ Before submitting a pull request:
 
 ## License
 
-The project's license and distribution terms will be defined before public release. Third-party datasets, Quran text, tafsir content, and model assets remain subject to their respective licenses and usage conditions.
+This project is licensed under the Apache License 2.0. See the LICENSE file for details. Third-party datasets, Quran text, tafsir content, and model assets remain subject to their respective licenses and usage conditions.
 
 ---
 

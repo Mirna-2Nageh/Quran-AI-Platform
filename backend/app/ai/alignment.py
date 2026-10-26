@@ -35,6 +35,16 @@ class AlignmentResult:
 def normalize_arabic_word(word: str) -> str:
     """Normalize common Arabic writing differences for text comparison."""
     normalized = unicodedata.normalize("NFKC", word)
+    # Normalize the verified Uthmani spelling of "صراط".
+    # Preserve the written alef represented by the dagger alef.
+    normalized = normalized.replace(
+        "\u0635\u0650\u0631\u064e\u0670\u0637",
+        "\u0635\u0631\u0627\u0637",
+    )
+
+    # Handle the verified Uthmani spelling of "العالمين".
+    # The dagger alif represents the omitted written alef here.
+    normalized = normalized.replace("\u0639\u064e\u0640\u0670\u0644", "\u0639\u0627\u0644")
     normalized = normalized.replace("\u0640", "")  # Tatweel
 
     # Ignore the Quranic end-of-ayah marker.
@@ -48,6 +58,7 @@ def normalize_arabic_word(word: str) -> str:
                 "\u0625": "\u0627",  # Alef with hamza below
                 "\u0671": "\u0627",  # Alef wasla
                 "\u0649": "\u064a",  # Alef maqsura
+                "\u06cc": "\u064a",  # Farsi Yeh -> Arabic Yeh
             }
         )
     )

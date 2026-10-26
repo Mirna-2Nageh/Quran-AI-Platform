@@ -93,6 +93,29 @@ class AuthService:
 
         return user
 
+    async def refresh_csrf(self, session_token):
+        if not session_token:
+            return None
+
+        csrf_token = generate_csrf_token()
+
+        result = await self.sessions.update_one(
+            {
+                "token_hash": hash_session_token(session_token),
+                "expires_at": {"$gt": datetime.now(timezone.utc)},
+            },
+            {
+                "$set": {
+                    "csrf_hash": hash_session_token(csrf_token),
+                }
+            },
+        )
+
+        if result.matched_count == 0:
+            return None
+
+        return csrf_token
+
     async def verify_csrf(self, session_token, csrf_token):
         if not session_token or not csrf_token:
             return False

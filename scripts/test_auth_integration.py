@@ -102,14 +102,39 @@ def main():
             csrf_token = login.headers.get("X-CSRF-Token")
             assert csrf_token, "CSRF token missing from login"
 
-            logout = client.post(
+            # Recover a new CSRF token using the existing session.
+            refresh = client.get("/api/v1/auth/csrf")
+            check(refresh, 200, "CSRF recovery")
+
+            new_csrf_token = refresh.headers.get("X-CSRF-Token")
+            assert new_csrf_token, "Recovered CSRF token missing"
+            assert new_csrf_token != csrf_token, "CSRF token was not rotated"
+            assert refresh.headers.get("cache-control") == "no-store"
+
+            # The old token must no longer authorize logout.
+            stale_logout = client.post(
                 "/api/v1/auth/logout",
                 headers={"X-CSRF-Token": csrf_token},
             )
-            check(logout, 200, "Logout")
+            check(stale_logout, 403, "Old CSRF token rejected")
+
+            # Failed logout must not invalidate the session.
+            still_authenticated = client.get("/api/v1/auth/me")
+            check(still_authenticated, 200, "Session preserved")
+
+            # The recovered token must authorize logout.
+            logout = client.post(
+                "/api/v1/auth/logout",
+                headers={"X-CSRF-Token": new_csrf_token},
+            )
+            check(logout, 200, "Logout with recovered CSRF")
 
             after_logout = client.get("/api/v1/auth/me")
             check(after_logout, 401, "Session invalidation")
+
+            # CSRF recovery must reject requests without a session.
+            unauthenticated_csrf = client.get("/api/v1/auth/csrf")
+            check(unauthenticated_csrf, 401, "CSRF without session")
 
             # Test login throttling with a separate nonexistent account.
             blocked_email = f"blocked-{secrets.token_hex(8)}@example.com"

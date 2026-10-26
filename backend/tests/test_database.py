@@ -35,15 +35,18 @@ def test_successful_connection_initializes_database_state() -> None:
     users_collection = MagicMock()
     sessions_collection = MagicMock()
     login_attempts_collection = MagicMock()
+    recitation_sessions_collection = MagicMock()
 
     users_collection.create_index = AsyncMock()
     sessions_collection.create_index = AsyncMock()
     login_attempts_collection.create_index = AsyncMock()
+    recitation_sessions_collection.create_index = AsyncMock()
 
     database.__getitem__.side_effect = {
         "users": users_collection,
         "sessions": sessions_collection,
         "login_attempts": login_attempts_collection,
+        "recitation_sessions": recitation_sessions_collection,
     }.__getitem__
 
     client.__getitem__.return_value = database
