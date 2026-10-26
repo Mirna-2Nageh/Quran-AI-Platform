@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     environment: Literal["development", "testing", "production"] = "development"
     debug: bool = False
 
+    mongo_uri: str | None = None
+    mongo_db_name: str = "quran_ai"
+    mongo_server_selection_timeout_ms: int = 5000
+
 
 @lru_cache
 def get_settings() -> Settings:
