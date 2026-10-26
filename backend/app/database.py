@@ -37,6 +37,9 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
     await app.state.database["sessions"].create_index(
         "expires_at", expireAfterSeconds=0
     )
+    await app.state.database["login_attempts"].create_index(
+        "expires_at", expireAfterSeconds=0
+    )
 
     logger.info("Successfully connected to MongoDB.")
 

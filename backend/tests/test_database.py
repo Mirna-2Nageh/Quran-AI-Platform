@@ -34,13 +34,16 @@ def test_successful_connection_initializes_database_state() -> None:
     database = MagicMock()
     users_collection = MagicMock()
     sessions_collection = MagicMock()
+    login_attempts_collection = MagicMock()
 
     users_collection.create_index = AsyncMock()
     sessions_collection.create_index = AsyncMock()
+    login_attempts_collection.create_index = AsyncMock()
 
     database.__getitem__.side_effect = {
         "users": users_collection,
         "sessions": sessions_collection,
+        "login_attempts": login_attempts_collection,
     }.__getitem__
 
     client.__getitem__.return_value = database
@@ -55,6 +58,9 @@ def test_successful_connection_initializes_database_state() -> None:
     users_collection.create_index.assert_awaited_once_with("email", unique=True)
     sessions_collection.create_index.assert_any_await("token_hash", unique=True)
     sessions_collection.create_index.assert_any_await(
+        "expires_at", expireAfterSeconds=0
+    )
+    login_attempts_collection.create_index.assert_awaited_once_with(
         "expires_at", expireAfterSeconds=0
     )
 

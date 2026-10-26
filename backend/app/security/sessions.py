@@ -10,3 +10,8 @@ def generate_session_token() -> str:
 def hash_session_token(token: str) -> str:
     """Store only a SHA-256 digest of the session token."""
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def generate_csrf_token() -> str:
+    """Generate a random CSRF token for an authenticated session."""
+    return secrets.token_urlsafe(32)

@@ -32,18 +32,12 @@ async def cleanup():
     try:
         database = client[settings.mongo_db_name]
 
-        user = await database["users"].find_one(
-            {"email": email}
-        )
+        user = await database["users"].find_one({"email": email})
 
         if user:
-            await database["sessions"].delete_many(
-                {"user_id": user["_id"]}
-            )
+            await database["sessions"].delete_many({"user_id": user["_id"]})
 
-            await database["users"].delete_one(
-                {"_id": user["_id"], "email": email}
-            )
+            await database["users"].delete_one({"_id": user["_id"], "email": email})
 
             print("Cleanup: test user and sessions removed")
     finally:
@@ -94,9 +88,7 @@ def main():
             )
             check(login, 200, "Login")
 
-            assert client.cookies.get("quran_session"), (
-                "Session cookie missing"
-            )
+            assert client.cookies.get("quran_session"), "Session cookie missing"
 
             me = client.get("/api/v1/auth/me")
             check(me, 200, "Authenticated /me")
@@ -104,11 +96,56 @@ def main():
             assert me.json()["email"] == email
             assert me.json()["role"] == "student"
 
-            logout = client.post("/api/v1/auth/logout")
+            missing_csrf = client.post("/api/v1/auth/logout")
+            check(missing_csrf, 403, "Missing CSRF token")
+
+            csrf_token = login.headers.get("X-CSRF-Token")
+            assert csrf_token, "CSRF token missing from login"
+
+            logout = client.post(
+                "/api/v1/auth/logout",
+                headers={"X-CSRF-Token": csrf_token},
+            )
             check(logout, 200, "Logout")
 
             after_logout = client.get("/api/v1/auth/me")
             check(after_logout, 401, "Session invalidation")
+
+            # Test login throttling with a separate nonexistent account.
+            blocked_email = f"blocked-{secrets.token_hex(8)}@example.com"
+
+            try:
+                for attempt in range(5):
+                    failed = client.post(
+                        "/api/v1/auth/login",
+                        json={
+                            "email": blocked_email,
+                            "password": "WrongPassword123!",
+                        },
+                    )
+                    check(failed, 401, f"Failed attempt {attempt + 1}")
+
+                blocked = client.post(
+                    "/api/v1/auth/login",
+                    json={
+                        "email": blocked_email,
+                        "password": "WrongPassword123!",
+                    },
+                )
+                check(blocked, 429, "Rate limit enforcement")
+                assert blocked.headers.get("retry-after") == "900"
+            finally:
+                from app.security.rate_limit import LoginRateLimiter
+
+                async def clear_test_limit():
+                    mongo = AsyncMongoClient(settings.mongo_uri)
+                    try:
+                        limiter = LoginRateLimiter(mongo[settings.mongo_db_name])
+                        await limiter.clear(blocked_email)
+                    finally:
+                        await mongo.close()
+
+                asyncio.run(clear_test_limit())
 
             print("\nAUTHENTICATION INTEGRATION: PASSED")
 

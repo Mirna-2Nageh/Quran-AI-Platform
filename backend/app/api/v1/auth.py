@@ -8,7 +8,11 @@ from app.schemas.auth import (
     RegisterRequest,
     UserResponse,
 )
-from app.services.auth import AuthService, InvalidCredentialsError
+from app.services.auth import (
+    AuthService,
+    InvalidCredentialsError,
+    TooManyLoginAttemptsError,
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -44,13 +48,8 @@ def check_origin(request: Request) -> None:
         return
 
     settings = get_settings()
-    allowed = (
-        {"http://localhost:5173", "http://127.0.0.1:5173"}
-        if settings.environment != "production"
-        else set()
-    )
 
-    if origin not in allowed:
+    if origin not in settings.allowed_origins:
         raise HTTPException(
             status_code=403,
             detail="Origin not allowed",
@@ -94,7 +93,7 @@ async def login(
     check_origin(request)
 
     try:
-        user, token = await service.login(
+        user, token, csrf_token = await service.login(
             payload.email,
             payload.password,
         )
@@ -102,6 +101,12 @@ async def login(
         raise HTTPException(
             status_code=401,
             detail="Invalid credentials",
+        ) from exc
+    except TooManyLoginAttemptsError as exc:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Try again later.",
+            headers={"Retry-After": "900"},
         ) from exc
 
     response.set_cookie(
@@ -113,6 +118,8 @@ async def login(
         max_age=7 * 24 * 60 * 60,
         path="/",
     )
+
+    response.headers["X-CSRF-Token"] = csrf_token
 
     return user_response(user)
 
@@ -142,6 +149,14 @@ async def logout(
     check_origin(request)
 
     token = request.cookies.get(COOKIE_NAME)
+    csrf_token = request.headers.get("X-CSRF-Token")
+
+    if not await service.verify_csrf(token, csrf_token):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid CSRF token",
+        )
+
     await service.logout(token)
 
     response = JSONResponse({"message": "Logged out"})
