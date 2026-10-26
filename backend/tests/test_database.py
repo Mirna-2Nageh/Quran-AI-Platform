@@ -31,12 +31,32 @@ def test_successful_connection_initializes_database_state() -> None:
     client.admin.command = AsyncMock(return_value={"ok": 1})
     client.close = AsyncMock()
 
+    database = MagicMock()
+    users_collection = MagicMock()
+    sessions_collection = MagicMock()
+
+    users_collection.create_index = AsyncMock()
+    sessions_collection.create_index = AsyncMock()
+
+    database.__getitem__.side_effect = {
+        "users": users_collection,
+        "sessions": sessions_collection,
+    }.__getitem__
+
+    client.__getitem__.return_value = database
+
     with patch("app.database.AsyncMongoClient", return_value=client):
         asyncio.run(connect_to_mongo(app, settings))
 
     client.admin.command.assert_awaited_once_with("ping")
     assert app.state.mongo_client is client
-    assert app.state.database is client[settings.mongo_db_name]
+    assert app.state.database is database
+
+    users_collection.create_index.assert_awaited_once_with("email", unique=True)
+    sessions_collection.create_index.assert_any_await("token_hash", unique=True)
+    sessions_collection.create_index.assert_any_await(
+        "expires_at", expireAfterSeconds=0
+    )
 
 
 def test_connection_failure_closes_client_and_reraises() -> None:
