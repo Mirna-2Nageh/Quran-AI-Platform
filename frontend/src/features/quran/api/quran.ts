@@ -45,3 +45,34 @@ export function getSurah(number: number): Promise<SurahDetail> {
 
   return quranRequest<SurahDetail>(`/surah/${number}/ar.uthmani`);
 }
+
+
+export interface AyahTafsir {
+  numberInSurah: number;
+  text: string;
+  edition: {
+    identifier: string;
+    name: string;
+  };
+}
+
+export function getAyahTafsir(
+  surahNumber: number,
+  ayahNumber: number,
+): Promise<AyahTafsir> {
+  if (
+    !Number.isInteger(surahNumber) ||
+    surahNumber < 1 ||
+    surahNumber > 114
+  ) {
+    throw new Error("Invalid surah number");
+  }
+
+  if (!Number.isInteger(ayahNumber) || ayahNumber < 1) {
+    throw new Error("Invalid ayah number");
+  }
+
+  return quranRequest<AyahTafsir>(
+    `/ayah/${surahNumber}:${ayahNumber}/ar.muyassar`,
+  );
+}

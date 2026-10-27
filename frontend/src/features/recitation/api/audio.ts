@@ -76,6 +76,7 @@ export async function analyzeRecitationAudio(
   expectedText: string,
   surahNumber: number,
   ayahNumber: number,
+  endAyahNumber: number = ayahNumber,
 ): Promise<AudioAnalysisResponse> {
   const csrfToken = await getCsrfToken();
 
@@ -86,6 +87,7 @@ export async function analyzeRecitationAudio(
   formData.append("expected_text", expectedText);
   formData.append("surah_number", String(surahNumber));
   formData.append("ayah_number", String(ayahNumber));
+  formData.append("end_ayah_number", String(endAyahNumber));
 
   const response = await fetch(
     `${API_BASE_URL}/api/v1/recitation/analyze`,

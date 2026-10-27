@@ -8,13 +8,14 @@ import httpx
 import pytest
 from pymongo import AsyncMongoClient
 
+from app.services.quran_text import get_quran_text
 from app.api.v1.auth import get_auth_service
 from app.config import Settings
 from app.main import app
 
 
 WEBM = b"\x1a\x45\xdf\xa3" + b"test-audio-data"
-EXPECTED = "بسم الله الرحمن الرحيم"
+EXPECTED = get_quran_text(1, 1, 1)
 
 
 def test_recitation_save_history_and_user_isolation():
