@@ -37,6 +37,9 @@ async def get_recitation_history(
                 "id": str(session["_id"]),
                 "surah_number": session["surah_number"],
                 "ayah_number": session["ayah_number"],
+                "end_ayah_number": session.get(
+                    "end_ayah_number", session["ayah_number"]
+                ),
                 "expected_text": session["expected_text"],
                 "recognized_text": session["recognized_text"],
                 "alignment": session["alignment"],

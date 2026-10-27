@@ -11,6 +11,7 @@ interface AudioRecorderProps {
   expectedText: string;
   surahNumber: number;
   ayahNumber: number;
+  endAyahNumber?: number;
   onAnalysisComplete: (result: AudioAnalysisResponse) => void;
   onRecordingReset: () => void;
 }
@@ -19,6 +20,7 @@ export function AudioRecorder({
   expectedText,
   surahNumber,
   ayahNumber,
+  endAyahNumber = ayahNumber,
   onAnalysisComplete,
   onRecordingReset,
 }: AudioRecorderProps) {
@@ -142,6 +144,7 @@ export function AudioRecorder({
         expectedText,
         surahNumber,
         ayahNumber,
+        endAyahNumber,
       );
 
       onAnalysisComplete(result);
@@ -243,7 +246,7 @@ export function AudioRecorder({
 
           {analysisSuccess && (
             <p role="status">
-              اكتمل التعرف على النص ومقارنته بالآية المختارة.
+              اكتمل التعرف على النص ومقارنته بالآيات المختارة.
             </p>
           )}
         </div>

@@ -8,6 +8,11 @@ from app.schemas.recitation import AlignmentIssueResponse, AlignmentResponse
 from app.repositories.recitation_sessions import RecitationSessionRepository
 from app.services.auth import AuthService
 from app.services.quran_asr import ASRError, transcribe_audio
+from app.services.quran_text import (
+    QuranDatasetError,
+    QuranTextError,
+    get_quran_text,
+)
 
 router = APIRouter(prefix="/recitation", tags=["Recitation"])
 
@@ -24,6 +29,7 @@ async def analyze_recitation(
     expected_text: str = Form(...),
     surah_number: int = Form(..., ge=1, le=114),
     ayah_number: int = Form(..., ge=1),
+    end_ayah_number: int | None = Form(default=None, ge=1),
     service: AuthService = Depends(get_auth_service),
 ):
     check_origin(request)
@@ -39,11 +45,52 @@ async def analyze_recitation(
     if not await service.verify_csrf(session_token, csrf_token):
         raise HTTPException(status_code=403, detail="Invalid CSRF token")
 
+    if end_ayah_number is None:
+        end_ayah_number = ayah_number
+
+    if end_ayah_number < ayah_number:
+        raise HTTPException(
+            status_code=422,
+            detail="End ayah must not precede start ayah",
+        )
+
+    if end_ayah_number - ayah_number + 1 > 10:
+        raise HTTPException(
+            status_code=422,
+            detail="Recitation range cannot exceed 10 ayahs",
+        )
+
     if not expected_text.strip():
         raise HTTPException(status_code=422, detail="Expected text is required")
 
     if len(expected_text) > MAX_EXPECTED_TEXT_LENGTH:
         raise HTTPException(status_code=422, detail="Expected text is too long")
+
+    try:
+        canonical_text = get_quran_text(
+            surah_number,
+            ayah_number,
+            end_ayah_number,
+        )
+    except QuranDatasetError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="Quran text is temporarily unavailable",
+        ) from exc
+    except QuranTextError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    # Ignore whitespace differences without changing Quranic characters.
+    normalized_submitted = " ".join(expected_text.split())
+    normalized_canonical = " ".join(canonical_text.split())
+
+    if normalized_submitted != normalized_canonical:
+        raise HTTPException(
+            status_code=422,
+            detail="Expected text does not match the selected Quran ayahs",
+        )
+
+    expected_text = canonical_text
 
     content_type = (audio.content_type or "").lower()
     mime_parts = [part.strip() for part in content_type.split(";")]
@@ -119,6 +166,7 @@ async def analyze_recitation(
             user_id=user["_id"],
             surah_number=surah_number,
             ayah_number=ayah_number,
+            end_ayah_number=end_ayah_number,
             expected_text=expected_text,
             recognized_text=recognized_text,
             alignment=alignment.model_dump(),

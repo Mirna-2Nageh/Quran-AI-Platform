@@ -590,3 +590,90 @@ small { color: #72847a; }
     padding: 12px 5px;
   }
 }
+
+/* Interactive Quran Tafsir */
+.ayah-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.tafsir-toggle {
+  margin-top: 12px;
+  padding: 9px 16px;
+  border: 1px solid rgba(65, 125, 105, 0.28);
+  border-radius: 10px;
+  background: rgba(65, 125, 105, 0.08);
+  color: #27634f;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.tafsir-toggle:hover {
+  background: rgba(65, 125, 105, 0.15);
+  border-color: rgba(65, 125, 105, 0.5);
+}
+
+.tafsir-toggle:focus-visible {
+  outline: 3px solid #64a68e;
+  outline-offset: 3px;
+}
+
+.tafsir-panel {
+  margin-top: 16px;
+  padding: 20px 24px;
+  border: 1px solid rgba(65, 125, 105, 0.2);
+  border-right: 4px solid #417d69;
+  border-radius: 14px;
+  background: #f6faf7;
+  color: #243d33;
+  line-height: 2;
+  text-align: right;
+}
+
+.tafsir-panel h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+  color: #27634f;
+}
+
+.tafsir-panel p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 2.1;
+}
+
+@media (max-width: 640px) {
+  .tafsir-panel {
+    padding: 14px 16px;
+  }
+}
+
+/* Quran to memorization navigation */
+.ayah-practice-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0 0 10px;
+  padding: 9px 16px;
+  border: 1px solid #176448;
+  border-radius: 10px;
+  background: #176448;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.ayah-practice-link:hover {
+  background: #104b36;
+  color: #ffffff;
+}
+
+.ayah-practice-link:focus-visible {
+  outline: 3px solid #64a68e;
+  outline-offset: 3px;
+}

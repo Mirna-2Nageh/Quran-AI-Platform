@@ -12,6 +12,7 @@ import {
   getRecitationHistory,
   type RecitationHistoryItem,
 } from "../api/history";
+import { getSurahs } from "../../quran/api/quran";
 
 const issueLabels = {
   substitution: "كلمة مختلفة",
@@ -36,6 +37,7 @@ export function RecitationHistoryPage() {
   const [items, setItems] = useState<RecitationHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [surahNames, setSurahNames] = useState<Record<number, string>>({});
 
   const loadHistory = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -84,6 +86,30 @@ export function RecitationHistoryPage() {
       });
 
     return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getSurahs()
+      .then((surahs) => {
+        if (cancelled) return;
+
+        const names: Record<number, string> = {};
+
+        for (const surah of surahs) {
+          names[surah.number] = surah.name;
+        }
+
+        setSurahNames(names);
+      })
+      .catch(() => {
+        // Keep the numeric surah label if names are unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const refreshHistory = () => {
@@ -154,9 +180,11 @@ export function RecitationHistoryPage() {
                 className="recitation-panel"
               >
                 <h2>
-                  سورة رقم {item.surah_number}
+                  سورة {surahNames[item.surah_number] ?? `رقم ${item.surah_number}`}
                   {" — "}
-                  الآية {item.ayah_number}
+                  {(item.end_ayah_number ?? item.ayah_number) === item.ayah_number
+                    ? `الآية ${item.ayah_number}`
+                    : `الآيات ${item.ayah_number}–${item.end_ayah_number}`}
                 </h2>
 
                 <p className="muted">

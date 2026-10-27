@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowRight, BookOpen } from "lucide-react";
 import {
   getSurah,
+  getAyahTafsir,
+  type AyahTafsir,
   type SurahDetail,
 } from "../api/quran";
 
@@ -13,6 +15,58 @@ export function SurahDetailPage() {
   const [surah, setSurah] = useState<SurahDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedAyah, setSelectedAyah] = useState<string | null>(null);
+  const [tafsir, setTafsir] = useState<AyahTafsir | null>(null);
+  const [tafsirLoading, setTafsirLoading] = useState(false);
+  const [tafsirError, setTafsirError] = useState("");
+  const [tafsirRetry, setTafsirRetry] = useState(0);
+
+  useEffect(() => {
+    if (selectedAyah === null) return;
+
+    let cancelled = false;
+
+    getAyahTafsir(surahNumber, Number(selectedAyah.split(":")[1]))
+      .then((data) => {
+        if (!cancelled) setTafsir(data);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setTafsirError(
+            err instanceof Error ? err.message : "تعذر تحميل التفسير",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setTafsirLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [surahNumber, selectedAyah, tafsirRetry]);
+
+  function toggleTafsir(ayahNumber: number) {
+    const ayahKey = `${surahNumber}:${ayahNumber}`;
+
+    if (selectedAyah === ayahKey) {
+      setSelectedAyah(null);
+      return;
+    }
+
+    setTafsir(null);
+    setTafsirError("");
+    setTafsirLoading(true);
+    setSelectedAyah(ayahKey);
+  }
+
+  function retryTafsir() {
+    setTafsir(null);
+    setTafsirError("");
+    setTafsirLoading(true);
+    setTafsirRetry((value) => value + 1);
+  }
+
 
   useEffect(() => {
     if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
@@ -82,9 +136,55 @@ export function SurahDetailPage() {
                   <span className="ayah-badge">
                     {ayah.numberInSurah}
                   </span>
-                  <p className="ayah-text" lang="ar">
-                    {ayah.text}
-                  </p>
+                  <div className="ayah-body">
+                    <p className="ayah-text" lang="ar">
+                      {ayah.text}
+                    </p>
+
+                    <Link
+                      to={`/recitation?surah=${surahNumber}&ayah=${ayah.numberInSurah}`}
+                      className="ayah-practice-link"
+                    >
+                      ابدأ تسميع هذه الآية
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="tafsir-toggle"
+                      aria-expanded={selectedAyah === `${surahNumber}:${ayah.numberInSurah}`}
+                      onClick={() => toggleTafsir(ayah.numberInSurah)}
+                    >
+                      {selectedAyah === `${surahNumber}:${ayah.numberInSurah}`
+                        ? "إخفاء التفسير"
+                        : "عرض التفسير"}
+                    </button>
+
+                    {selectedAyah === `${surahNumber}:${ayah.numberInSurah}` && (
+                      <section className="tafsir-panel" aria-label="تفسير الآية">
+                        {tafsirLoading && (
+                          <p role="status">جاري تحميل التفسير...</p>
+                        )}
+
+                        {tafsirError && (
+                          <div>
+                            <p className="form-error" role="alert">
+                              {tafsirError}
+                            </p>
+                            <button type="button" onClick={retryTafsir}>
+                              إعادة المحاولة
+                            </button>
+                          </div>
+                        )}
+
+                        {tafsir && !tafsirLoading && !tafsirError && (
+                          <>
+                            <h3>{tafsir.edition.name}</h3>
+                            <p lang="ar">{tafsir.text}</p>
+                          </>
+                        )}
+                      </section>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>

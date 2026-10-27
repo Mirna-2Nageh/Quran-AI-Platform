@@ -81,3 +81,7 @@ tests/asr_evaluation/results/latest.csv
 
 # Local audio recordings and benchmark samples
 tests/audio_samples/
+
+# Quran dataset: pending source verification and redistribution review
+/backend/data/quran/uthmani.json
+/backend/data/quran/uthmani.sha256

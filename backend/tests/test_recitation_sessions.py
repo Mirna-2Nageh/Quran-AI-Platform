@@ -56,6 +56,7 @@ async def _test_create_recitation_session():
         user_id="user-1",
         surah_number=1,
         ayah_number=1,
+        end_ayah_number=1,
         expected_text="بسم الله",
         recognized_text="بسم الله",
         alignment={
@@ -88,6 +89,7 @@ async def _test_list_only_current_user_sessions():
             user_id=user_id,
             surah_number=1,
             ayah_number=1,
+            end_ayah_number=1,
             expected_text="بسم الله",
             recognized_text="بسم الله",
             alignment={"issues": []},

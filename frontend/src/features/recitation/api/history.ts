@@ -7,6 +7,7 @@ export interface RecitationHistoryItem {
   id: string;
   surah_number: number;
   ayah_number: number;
+  end_ayah_number?: number;
   expected_text: string;
   recognized_text: string;
   alignment: AlignmentResponse;

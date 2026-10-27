@@ -1,7 +1,7 @@
 import { AudioRecorder } from "../components/AudioRecorder";
 import type { AudioAnalysisResponse } from "../api/audio";
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { BookOpen, GitCompareArrows } from "lucide-react";
 
 import { getSurah, type SurahDetail } from "../../quran/api/quran";
@@ -18,9 +18,31 @@ const issueLabels: Record<AlignmentIssue["operation"], string> = {
 };
 
 export function RecitationPracticePage() {
-  const [surahNumber, setSurahNumber] = useState(1);
+  const [searchParams] = useSearchParams();
+
+  const requestedSurah = Number(searchParams.get("surah"));
+  const requestedAyah = Number(searchParams.get("ayah"));
+
+  const initialSurah =
+    Number.isInteger(requestedSurah) &&
+    requestedSurah >= 1 &&
+    requestedSurah <= 114
+      ? requestedSurah
+      : 1;
+
+  const initialAyah =
+    Number.isInteger(requestedAyah) && requestedAyah >= 1
+      ? requestedAyah
+      : 1;
+
+  const [surahNumber, setSurahNumber] = useState(initialSurah);
+  const [requestedSelection, setRequestedSelection] = useState({
+    surah: initialSurah,
+    ayah: initialAyah,
+  });
   const [surah, setSurah] = useState<SurahDetail | null>(null);
   const [ayahNumber, setAyahNumber] = useState(1);
+  const [endAyahNumber, setEndAyahNumber] = useState(1);
   const [recognizedText, setRecognizedText] = useState("");
   const [result, setResult] = useState<AlignmentResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +56,14 @@ export function RecitationPracticePage() {
       .then((data) => {
         if (!cancelled) {
           setSurah(data);
-          setAyahNumber(1);
+          const initialAyah =
+            data.number === requestedSelection.surah &&
+            requestedSelection.ayah <= data.numberOfAyahs
+              ? requestedSelection.ayah
+              : 1;
+
+          setAyahNumber(initialAyah);
+          setEndAyahNumber(initialAyah);
         }
       })
       .catch((err: unknown) => {
@@ -52,11 +81,19 @@ export function RecitationPracticePage() {
     return () => {
       cancelled = true;
     };
-  }, [surahNumber]);
+  }, [surahNumber, requestedSelection]);
 
-  const selectedAyah = surah?.ayahs.find(
-    (ayah) => ayah.numberInSurah === ayahNumber,
-  );
+  const selectedAyahs = surah?.ayahs.filter(
+    (ayah) =>
+      ayah.numberInSurah >= ayahNumber &&
+      ayah.numberInSurah <= endAyahNumber,
+  ) ?? [];
+
+  const expectedText = selectedAyahs
+    .map((ayah) => ayah.text)
+    .join(" ");
+
+  const hasSelection = selectedAyahs.length > 0;
 
   function handleAudioAnalysis(
     analysis: AudioAnalysisResponse,
@@ -69,7 +106,7 @@ export function RecitationPracticePage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!selectedAyah || !recognizedText.trim()) return;
+    if (!hasSelection || !recognizedText.trim()) return;
 
     setError("");
     setSubmitting(true);
@@ -77,7 +114,7 @@ export function RecitationPracticePage() {
 
     try {
       const response = await alignRecitation({
-        expected_text: selectedAyah.text,
+        expected_text: expectedText,
         recognized_text: recognizedText,
       });
       setResult(response);
@@ -91,6 +128,7 @@ export function RecitationPracticePage() {
   }
 
   function changeSurah(value: number) {
+    setRequestedSelection({ surah: value, ayah: 1 });
     setLoading(true);
     setError("");
     setResult(null);
@@ -101,6 +139,16 @@ export function RecitationPracticePage() {
 
   function changeAyah(value: number) {
     setAyahNumber(value);
+    setEndAyahNumber((current) =>
+      Math.min(Math.max(current, value), value + 9),
+    );
+    setRecognizedText("");
+    setResult(null);
+    setError("");
+  }
+
+  function changeEndAyah(value: number) {
+    setEndAyahNumber(value);
     setRecognizedText("");
     setResult(null);
     setError("");
@@ -143,7 +191,7 @@ export function RecitationPracticePage() {
             </label>
 
             <label>
-              رقم الآية
+              من آية
               <select
                 value={ayahNumber}
                 disabled={!surah || loading}
@@ -161,22 +209,53 @@ export function RecitationPracticePage() {
                 ))}
               </select>
             </label>
+
+            <label>
+              إلى آية
+              <select
+                value={endAyahNumber}
+                disabled={!surah || loading}
+                onChange={(event) =>
+                  changeEndAyah(Number(event.target.value))
+                }
+              >
+                {surah?.ayahs
+                  .filter(
+                    (ayah) =>
+                      ayah.numberInSurah >= ayahNumber &&
+                      ayah.numberInSurah <= ayahNumber + 9,
+                  )
+                  .map((ayah) => (
+                    <option
+                      key={ayah.numberInSurah}
+                      value={ayah.numberInSurah}
+                    >
+                      {ayah.numberInSurah}
+                    </option>
+                  ))}
+              </select>
+            </label>
           </div>
 
           {loading && <p role="status">جاري تحميل الآيات...</p>}
 
-          {selectedAyah && (
+          {hasSelection && (
             <div className="expected-ayah" lang="ar">
-              {selectedAyah.text}
+              {selectedAyahs.map((ayah) => (
+                <span key={ayah.number}>
+                  {ayah.text} ﴿{ayah.numberInSurah}﴾{" "}
+                </span>
+              ))}
             </div>
           )}
 
-          {selectedAyah && (
+          {hasSelection && (
             <AudioRecorder
-              key={`${surahNumber}-${ayahNumber}`}
-              expectedText={selectedAyah.text}
+              key={`${surahNumber}-${ayahNumber}-${endAyahNumber}`}
+              expectedText={expectedText}
               surahNumber={surahNumber}
               ayahNumber={ayahNumber}
+              endAyahNumber={endAyahNumber}
               onAnalysisComplete={handleAudioAnalysis}
               onRecordingReset={() => {
                 setRecognizedText("");
@@ -203,7 +282,7 @@ export function RecitationPracticePage() {
 
             <button
               type="submit"
-              disabled={submitting || !selectedAyah}
+              disabled={submitting || !hasSelection}
             >
               <GitCompareArrows size={18} />
               {submitting ? "جاري المقارنة..." : "مقارنة النصوص"}
