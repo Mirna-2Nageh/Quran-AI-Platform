@@ -9,6 +9,7 @@ import pytest
 from pymongo import AsyncMongoClient
 
 from app.services.quran_text import get_quran_text
+from app.services.quran_asr import ASRMetadata
 from app.api.v1.auth import get_auth_service
 from app.config import Settings
 from app.main import app
@@ -63,9 +64,9 @@ def test_recitation_save_history_and_user_isolation():
             ) as http:
 
                 with patch(
-                    "app.api.v1.audio_analysis.transcribe_audio",
+                    "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
                     new_callable=AsyncMock,
-                    return_value=EXPECTED,
+                    return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
                 ):
                     response = await http.post(
                         "/api/v1/recitation/analyze",

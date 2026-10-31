@@ -7,7 +7,7 @@ from app.api.v1.auth import COOKIE_NAME, check_origin, get_auth_service
 from app.schemas.recitation import AlignmentIssueResponse, AlignmentResponse
 from app.repositories.recitation_sessions import RecitationSessionRepository
 from app.services.auth import AuthService
-from app.services.quran_asr import ASRError, transcribe_audio
+from app.services.quran_asr import ASRError, transcribe_audio_with_metadata
 from app.services.quran_text import (
     QuranDatasetError,
     QuranTextError,
@@ -126,7 +126,8 @@ async def analyze_recitation(
             )
 
         try:
-            recognized_text = await transcribe_audio(content)
+            metadata = await transcribe_audio_with_metadata(content)
+            recognized_text = metadata.text
         except ASRError as exc:
             raise HTTPException(
                 status_code=503,
@@ -176,6 +177,15 @@ async def analyze_recitation(
             "session_id": str(saved_session["_id"]),
             "recognized_text": recognized_text,
             "alignment": alignment.model_dump(),
+            "word_timings": [
+                {
+                    "word": item.word,
+                    "start_seconds": item.start_seconds,
+                    "end_seconds": item.end_seconds,
+                    "timing_type": item.timing_type,
+                }
+                for item in metadata.word_timings
+            ],
             "analysis_type": "word_level_asr_alignment",
             "tajweed_analyzed": False,
         }

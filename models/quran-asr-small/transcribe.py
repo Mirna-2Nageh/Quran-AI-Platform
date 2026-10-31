@@ -34,6 +34,7 @@ def main():
     parser.add_argument("audio", nargs="+")
     parser.add_argument("--standard", action="store_true", help="rewrite Uthmani spelling in standard spelling")
     parser.add_argument("--fp32", action="store_true", help="use model.onnx instead of model.int8.onnx")
+    parser.add_argument("--json", action="store_true", help="output transcription and token timestamps as JSON")
     args = parser.parse_args()
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")  # Arabic on Windows consoles
@@ -45,8 +46,20 @@ def main():
         stream = rec.create_stream()
         stream.accept_waveform(16000, load(path))
         rec.decode_stream(stream)
-        words = stream.result.text.replace("▁", " ").split()
-        print(" ".join(table.get(w, w) for w in words))
+        result = stream.result
+        words = result.text.replace("▁", " ").split()
+        text = " ".join(table.get(w, w) for w in words)
+
+        if args.json:
+            payload = {
+                "text": text,
+                "tokens": list(result.tokens),
+                "timestamps": list(result.timestamps),
+                "timing_type": "asr_character_token_timestamps",
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+        else:
+            print(text)
 
 
 if __name__ == "__main__":

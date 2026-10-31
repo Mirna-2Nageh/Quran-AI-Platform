@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from app.api.v1.auth import get_auth_service
 from app.api.v1.audio_analysis import MAX_AUDIO_SIZE
 from app.main import app
-from app.services.quran_asr import ASRError
+from app.services.quran_asr import ASRError, ASRMetadata
 from app.services.quran_text import get_quran_text
 
 
@@ -72,9 +72,9 @@ def test_successful_analysis(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value=EXPECTED,
+        return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ) as mock_asr:
         response = analyze(http)
 
@@ -89,13 +89,102 @@ def test_successful_analysis(client):
     mock_asr.assert_awaited_once_with(WEBM)
 
 
+
+def test_analysis_returns_word_timings(client):
+    from app.ai.word_timing import WordTiming
+    from app.services.quran_asr import ASRMetadata
+
+    http, _ = client
+
+    metadata = ASRMetadata(
+        text=EXPECTED,
+        tokens=[],
+        timestamps=[],
+        timing_type="asr_character_token_timestamps",
+        word_timings=[
+            WordTiming(
+                word="بسم",
+                start_seconds=0.12,
+                end_seconds=0.68,
+            ),
+            WordTiming(
+                word="الله",
+                start_seconds=0.68,
+                end_seconds=None,
+            ),
+        ],
+    )
+
+    with patch(
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
+        new_callable=AsyncMock,
+        return_value=metadata,
+        create=True,
+    ) as mock_asr:
+        response = analyze(http)
+
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+
+    assert data["recognized_text"] == EXPECTED
+    assert data["alignment"]["issues"] == []
+    assert data["tajweed_analyzed"] is False
+    assert data["word_timings"] == [
+        {
+            "word": "بسم",
+            "start_seconds": 0.12,
+            "end_seconds": 0.68,
+            "timing_type": "estimated_asr_word_boundary",
+        },
+        {
+            "word": "الله",
+            "start_seconds": 0.68,
+            "end_seconds": None,
+            "timing_type": "estimated_asr_word_boundary",
+        },
+    ]
+
+    mock_asr.assert_awaited_once_with(WEBM)
+
+
+def test_analysis_succeeds_without_word_timings(client):
+    from app.services.quran_asr import ASRMetadata
+
+    http, _ = client
+
+    metadata = ASRMetadata(
+        text=EXPECTED,
+        tokens=[],
+        timestamps=[],
+        timing_type="asr_character_token_timestamps",
+        word_timings=[],
+    )
+
+    with patch(
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
+        new_callable=AsyncMock,
+        return_value=metadata,
+        create=True,
+    ):
+        response = analyze(http)
+
+    assert response.status_code == 200, response.text
+
+    data = response.json()
+
+    assert data["recognized_text"] == EXPECTED
+    assert data["word_timings"] == []
+    assert data["tajweed_analyzed"] is False
+
+
 def test_missing_word_detected(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value="بسم الله الرحيم",
+        return_value=ASRMetadata(text="بسم الله الرحيم", tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ):
         response = analyze(http)
 
@@ -190,9 +279,9 @@ def test_empty_asr_transcription_rejected(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value="",
+        return_value=ASRMetadata(text="", tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ):
         response = analyze(http)
 
@@ -203,7 +292,7 @@ def test_asr_failure_returns_service_unavailable(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
         side_effect=ASRError("Model unavailable"),
     ):
@@ -217,9 +306,9 @@ def test_successful_analysis_saves_session(client):
     http, service = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value=EXPECTED,
+        return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ), patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
     ) as repository_class:
@@ -250,7 +339,7 @@ def test_failed_asr_does_not_save_session(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
         side_effect=ASRError("ASR unavailable"),
     ), patch(
@@ -267,9 +356,9 @@ def test_multi_ayah_analysis_saves_range(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value=EXPECTED,
+        return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ), patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
     ) as repository_class:
@@ -326,9 +415,9 @@ def test_single_ayah_defaults_end_to_start(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value=EXPECTED,
+        return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ), patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
     ) as repository_class:
@@ -349,7 +438,7 @@ def test_tampered_expected_text_rejected_before_asr(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
     ) as mock_asr, patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
@@ -369,7 +458,7 @@ def test_ayah_outside_surah_rejected_before_asr(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
     ) as mock_asr, patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
@@ -394,7 +483,7 @@ def test_multi_ayah_text_mismatch_rejected(client):
     http, _ = client
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
     ) as mock_asr, patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
@@ -432,7 +521,7 @@ def test_quran_dataset_failure_returns_503_before_asr(client, dataset_error):
         "app.api.v1.audio_analysis.get_quran_text",
         side_effect=QuranDatasetError(dataset_error),
     ), patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
     ) as mock_asr, patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
@@ -456,9 +545,9 @@ def test_whitespace_variations_accepted(client):
     submitted_text = "   \n  ".join(EXPECTED.split())
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
-        return_value=EXPECTED,
+        return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
     ), patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
     ) as repository_class:
@@ -489,7 +578,7 @@ def test_removed_diacritics_rejected_before_asr(client):
     assert without_diacritics != EXPECTED
 
     with patch(
-        "app.api.v1.audio_analysis.transcribe_audio",
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
         new_callable=AsyncMock,
     ) as mock_asr, patch(
         "app.api.v1.audio_analysis.RecitationSessionRepository"
