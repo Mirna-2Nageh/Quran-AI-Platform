@@ -1,6 +1,7 @@
 import {
   analyzeRecitationAudio,
   type AudioAnalysisResponse,
+  type WordTiming,
 } from "../api/audio";
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, RotateCcw } from "lucide-react";
@@ -30,6 +31,8 @@ export function AudioRecorder({
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analysisSuccess, setAnalysisSuccess] = useState(false);
+  const [wordTimings, setWordTimings] = useState<WordTiming[]>([]);
+  const [playbackTime, setPlaybackTime] = useState(0);
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -49,6 +52,8 @@ export function AudioRecorder({
     setAudioUrl(null);
     setAudioBlob(null);
     setAnalysisSuccess(false);
+    setWordTimings([]);
+    setPlaybackTime(0);
   }
 
   async function startRecording() {
@@ -137,6 +142,8 @@ export function AudioRecorder({
     setUploading(true);
     setError("");
     setAnalysisSuccess(false);
+    setWordTimings([]);
+    setPlaybackTime(0);
 
     try {
       const result = await analyzeRecitationAudio(
@@ -148,6 +155,7 @@ export function AudioRecorder({
       );
 
       onAnalysisComplete(result);
+      setWordTimings(result.word_timings);
       setAnalysisSuccess(true);
     } catch (err) {
       setError(
@@ -225,7 +233,44 @@ export function AudioRecorder({
 
       {status === "recorded" && audioUrl && (
         <div className="audio-playback">
-          <audio controls src={audioUrl} />
+          <audio
+            controls
+            src={audioUrl}
+            onTimeUpdate={(event) =>
+              setPlaybackTime(event.currentTarget.currentTime)
+            }
+            onSeeked={(event) =>
+              setPlaybackTime(event.currentTarget.currentTime)
+            }
+            onEnded={() => setPlaybackTime(0)}
+          />
+
+          {analysisSuccess && wordTimings.length > 0 && (
+            <div className="recitation-word-timings" dir="rtl">
+              <p className="muted">
+                متابعة زمنية تقريبية للكلمات التي تعرف عليها النظام،
+                وليست تقييمًا للنطق أو التجويد.
+              </p>
+              <div className="recitation-timed-words" lang="ar">
+                {wordTimings.map((item, index) => {
+                  const nextStart = wordTimings[index + 1]?.start_seconds;
+                  const end = item.end_seconds ?? nextStart;
+                  const active =
+                    playbackTime >= item.start_seconds &&
+                    (end === undefined || playbackTime < end);
+
+                  return (
+                    <span
+                      key={`${index}-${item.start_seconds}`}
+                      className={active ? "timed-word active" : "timed-word"}
+                    >
+                      {item.word}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <button
             type="button"

@@ -63,10 +63,18 @@ export async function uploadRecitationAudio(
   return response.json() as Promise<AudioUploadResponse>;
 }
 
+export interface WordTiming {
+  word: string;
+  start_seconds: number;
+  end_seconds: number | null;
+  timing_type: "estimated_asr_word_boundary";
+}
+
 export interface AudioAnalysisResponse {
   session_id: string;
   recognized_text: string;
   alignment: import("./recitation").AlignmentResponse;
+  word_timings: WordTiming[];
   analysis_type: "word_level_asr_alignment";
   tajweed_analyzed: false;
 }

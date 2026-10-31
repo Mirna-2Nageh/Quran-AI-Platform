@@ -177,9 +177,20 @@ def test_history_respects_limit():
 
 
 def test_history_rejects_invalid_limits():
-    with TestClient(app, raise_server_exceptions=False) as client:
-        for limit in (0, -1, 51):
-            response = client.get(
-                f"/api/v1/recitation/history?limit={limit}"
-            )
-            assert response.status_code == 422
+    user_id = ObjectId()
+    database = {
+        "recitation_sessions": FakeCollection([]),
+    }
+    service = AuthenticatedService(user_id, database)
+
+    app.dependency_overrides[get_auth_service] = lambda: service
+
+    try:
+        with TestClient(app, raise_server_exceptions=False) as client:
+            for limit in (0, -1, 51):
+                response = client.get(
+                    f"/api/v1/recitation/history?limit={limit}"
+                )
+                assert response.status_code == 422, response.text
+    finally:
+        app.dependency_overrides.pop(get_auth_service, None)

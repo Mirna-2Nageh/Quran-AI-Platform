@@ -677,3 +677,31 @@ small { color: #72847a; }
   outline: 3px solid #64a68e;
   outline-offset: 3px;
 }
+
+/* Estimated ASR word timing playback */
+.recitation-word-timings {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid #dce8df;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.recitation-timed-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  line-height: 2.2;
+}
+
+.timed-word {
+  padding: 2px 9px;
+  border-radius: 8px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.timed-word.active {
+  background: #d9eee3;
+  color: #17654d;
+  font-weight: 700;
+}
