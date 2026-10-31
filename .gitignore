@@ -85,3 +85,5 @@ tests/audio_samples/
 # Quran dataset: pending source verification and redistribution review
 /backend/data/quran/uthmani.json
 /backend/data/quran/uthmani.sha256
+
+.env.docker
