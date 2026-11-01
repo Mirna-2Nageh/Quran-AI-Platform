@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install backend
+        run: python -m pip install -e ".[dev]"
+
+      - name: Prepare Quran dataset
+        run: python scripts/setup_quran_dataset.py
+
+      - name: Ruff
+        run: python -m ruff check backend scripts
+
+      - name: Unit tests
+        run: |
+          python -m pytest backend/tests \
+            --ignore=backend/tests/test_recitation_http_integration.py \
+            -q
+
+  frontend:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+  mongo-integration:
+    name: MongoDB Integration
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      QURAN_AI_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install backend
+        run: python -m pip install -e ".[dev]"
+
+      - name: Prepare Quran dataset
+        run: python scripts/setup_quran_dataset.py
+
+      - name: Integration test
+        run: |
+          python -m pytest \
+            backend/tests/test_recitation_http_integration.py \
+            -v -rs -o strict_markers=true \
+            --junitxml=integration-results.xml
+
+          python - <<'CHECK'
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse("integration-results.xml").getroot()
+          cases = root.findall(".//testcase")
+          assert len(cases) == 1, f"Expected one test, got {len(cases)}"
+          assert not cases[0].findall("skipped"), "Integration test was skipped"
+          assert not cases[0].findall("failure"), "Integration test failed"
+          assert not cases[0].findall("error"), "Integration test errored"
+          CHECK
+
+  docker:
+    name: Docker Builds
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Prepare Quran dataset
+        run: python scripts/setup_quran_dataset.py
+
+      - name: Build backend
+        run: docker build --build-arg CI_NO_ASR_WEIGHTS=true -f backend/Dockerfile .
+
+      - name: Build frontend
+        run: docker build -f frontend/Dockerfile .

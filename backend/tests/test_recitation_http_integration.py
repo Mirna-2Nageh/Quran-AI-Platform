@@ -6,14 +6,12 @@ from uuid import uuid4
 
 import httpx
 import pytest
-from pymongo import AsyncMongoClient
-
-from app.services.quran_text import get_quran_text
-from app.services.quran_asr import ASRMetadata
 from app.api.v1.auth import get_auth_service
 from app.config import Settings
 from app.main import app
-
+from app.services.quran_asr import ASRMetadata
+from app.services.quran_text import get_quran_text
+from pymongo import AsyncMongoClient
 
 WEBM = b"\x1a\x45\xdf\xa3" + b"test-audio-data"
 EXPECTED = get_quran_text(1, 1, 1)
@@ -25,7 +23,13 @@ def test_recitation_save_history_and_user_isolation():
         settings = Settings()
 
         if not settings.mongo_uri:
-            pytest.skip("MongoDB URI is not configured")
+            pytest.skip("MongoDB test URI is not configured")
+
+        if settings.environment != "testing":
+            pytest.fail("Integration tests require the testing environment")
+
+        if settings.mongo_db_name != "quran_ai_ci_test":
+            pytest.fail("Refusing to use a non-test MongoDB database")
 
         client = AsyncMongoClient(
             settings.mongo_uri,
@@ -66,7 +70,12 @@ def test_recitation_save_history_and_user_isolation():
                 with patch(
                     "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
                     new_callable=AsyncMock,
-                    return_value=ASRMetadata(text=EXPECTED, tokens=[], timestamps=[], timing_type="asr_character_token_timestamps"),
+                    return_value=ASRMetadata(
+                        text=EXPECTED,
+                        tokens=[],
+                        timestamps=[],
+                        timing_type="asr_character_token_timestamps",
+                    ),
                 ):
                     response = await http.post(
                         "/api/v1/recitation/analyze",

@@ -27,7 +27,16 @@ RUN python -m venv /app/.venv-asr \
        numpy \
        scipy
 
+# Model weights are supplied separately in deployment.
+# CI validates the application image without requiring ONNX weights.
+ARG CI_NO_ASR_WEIGHTS=false
+
 COPY models/quran-asr-small /app/models/quran-asr-small
+
+RUN if [ "$CI_NO_ASR_WEIGHTS" = "false" ]; then \
+      test -f /app/models/quran-asr-small/model.int8.onnx || \
+      (echo "Missing ASR model weights" && exit 1); \
+    fi
 
 WORKDIR /app
 

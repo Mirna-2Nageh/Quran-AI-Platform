@@ -44,7 +44,10 @@ def normalize_arabic_word(word: str) -> str:
 
     # Handle the verified Uthmani spelling of "العالمين".
     # The dagger alif represents the omitted written alef here.
-    normalized = normalized.replace("\u0639\u064e\u0640\u0670\u0644", "\u0639\u0627\u0644")
+    normalized = normalized.replace(
+        "\u0639\u064e\u0640\u0670\u0644",
+        "\u0639\u0627\u0644",
+    )
     normalized = normalized.replace("\u0640", "")  # Tatweel
 
     # Ignore the Quranic end-of-ayah marker.

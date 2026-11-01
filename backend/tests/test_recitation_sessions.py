@@ -1,7 +1,6 @@
+import asyncio
 from datetime import datetime
 from types import SimpleNamespace
-
-import asyncio
 
 from app.repositories.recitation_sessions import RecitationSessionRepository
 

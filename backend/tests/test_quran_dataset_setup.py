@@ -8,7 +8,6 @@ from unittest.mock import patch
 
 import pytest
 
-
 SCRIPT = (
     Path(__file__).resolve().parents[2]
     / "scripts"
