@@ -67,6 +67,10 @@ def test_successful_connection_initializes_database_state() -> None:
         "expires_at", expireAfterSeconds=0
     )
 
+    recitation_sessions_collection.create_index.assert_awaited_once_with(
+        [("user_id", 1), ("created_at", -1), ("_id", -1)]
+    )
+
 
 def test_connection_failure_closes_client_and_reraises() -> None:
     app = FastAPI()
