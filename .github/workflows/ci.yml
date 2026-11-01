@@ -108,10 +108,11 @@ jobs:
 
           root = ET.parse("integration-results.xml").getroot()
           cases = root.findall(".//testcase")
-          assert len(cases) == 1, f"Expected one test, got {len(cases)}"
-          assert not cases[0].findall("skipped"), "Integration test was skipped"
-          assert not cases[0].findall("failure"), "Integration test failed"
-          assert not cases[0].findall("error"), "Integration test errored"
+          assert len(cases) >= 2, f"Expected at least two tests, got {len(cases)}"
+          for case in cases:
+              assert not case.findall("skipped"), "Integration test was skipped"
+              assert not case.findall("failure"), "Integration test failed"
+              assert not case.findall("error"), "Integration test errored"
           CHECK
 
   docker:
