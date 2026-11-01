@@ -1,6 +1,9 @@
 """Authenticated audio recitation analysis endpoint."""
 
+import logging
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from pymongo.errors import PyMongoError
 
 from app.ai.alignment import align_words
 from app.api.v1.auth import COOKIE_NAME, check_origin, get_auth_service
@@ -14,6 +17,8 @@ from app.services.quran_text import (
     QuranTextError,
     get_quran_text,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/recitation", tags=["Recitation"])
 
@@ -164,15 +169,25 @@ async def analyze_recitation(
 
         repository = RecitationSessionRepository(service.database)
 
-        saved_session = await repository.create(
-            user_id=user["_id"],
-            surah_number=surah_number,
-            ayah_number=ayah_number,
-            end_ayah_number=end_ayah_number,
-            expected_text=expected_text,
-            recognized_text=recognized_text,
-            alignment=alignment.model_dump(),
-        )
+        try:
+            saved_session = await repository.create(
+                user_id=user["_id"],
+                surah_number=surah_number,
+                ayah_number=ayah_number,
+                end_ayah_number=end_ayah_number,
+                expected_text=expected_text,
+                recognized_text=recognized_text,
+                alignment=alignment.model_dump(),
+            )
+        except PyMongoError as exc:
+            logger.error(
+                "Failed to persist recitation analysis session",
+                extra={"error_type": type(exc).__name__},
+            )
+            raise HTTPException(
+                status_code=503,
+                detail="Recitation history is temporarily unavailable",
+            ) from exc
 
         return {
             "session_id": str(saved_session["_id"]),

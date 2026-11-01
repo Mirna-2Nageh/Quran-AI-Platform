@@ -625,3 +625,36 @@ def test_removed_diacritics_rejected_before_asr(client):
     assert response.status_code == 422
     mock_asr.assert_not_awaited()
     repository_class.assert_not_called()
+
+
+def test_database_insert_failure_returns_503_without_leaking_details(client):
+    """A failed MongoDB insert must return a safe service error."""
+    from pymongo.errors import PyMongoError
+
+    http, service = client
+    collection = service.database["recitation_sessions"]
+
+    collection.insert_one.side_effect = PyMongoError(
+        "mongodb://private-host:27017/internal-db"
+    )
+
+    metadata = ASRMetadata(
+        text=EXPECTED,
+        tokens=[],
+        timestamps=[],
+        timing_type="asr_character_token_timestamps",
+    )
+
+    with patch(
+        "app.api.v1.audio_analysis.transcribe_audio_with_metadata",
+        new_callable=AsyncMock,
+        return_value=metadata,
+    ):
+        response = analyze(http)
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Recitation history is temporarily unavailable"
+    )
+    assert "private-host" not in response.text
+    collection.insert_one.assert_awaited_once()
