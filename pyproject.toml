@@ -44,5 +44,10 @@ target-version = ["py310"]
 line-length = 88
 
 [tool.pytest.ini_options]
+addopts = '-m "not real_asr"'
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
+
+markers = [
+    "real_asr: requires local ONNX ASR model and MongoDB",
+]
