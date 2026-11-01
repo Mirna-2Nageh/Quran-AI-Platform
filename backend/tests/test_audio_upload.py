@@ -1,11 +1,10 @@
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
-
-from app.api.v1.auth import get_auth_service
 from app.api.v1.audio import MAX_AUDIO_SIZE
+from app.api.v1.auth import get_auth_service
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture

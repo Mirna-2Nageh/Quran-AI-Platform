@@ -1,7 +1,6 @@
 """Tests for canonical Quran text retrieval."""
 
 import pytest
-
 from app.services.quran_text import (
     QuranTextError,
     get_quran_text,

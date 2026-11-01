@@ -4,7 +4,6 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-
 DATASET_PATH = (
     Path(__file__).resolve().parents[2]
     / "data"

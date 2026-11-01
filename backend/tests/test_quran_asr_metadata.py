@@ -5,13 +5,11 @@ import subprocess
 from unittest.mock import patch
 
 import pytest
-
 from app.services.quran_asr import (
     ASRError,
     ASRMetadata,
     _transcribe_metadata_sync,
 )
-
 
 VALID_PAYLOAD = {
     "text": "بسم الله",

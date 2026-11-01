@@ -1,7 +1,6 @@
 """Tests for approximate ASR word timing mapping."""
 
 import pytest
-
 from app.ai.word_timing import estimate_word_timings
 
 

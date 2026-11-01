@@ -1,9 +1,11 @@
 """Tests for authenticated recitation history."""
 
-from fastapi.testclient import TestClient
+from datetime import datetime, timezone
 
 from app.api.v1.auth import get_auth_service
 from app.main import app
+from bson import ObjectId
+from fastapi.testclient import TestClient
 
 
 class FakeAuthService:
@@ -27,11 +29,7 @@ def test_history_requires_authentication():
         app.dependency_overrides.pop(get_auth_service, None)
 
 
-from datetime import datetime, timezone
-from types import SimpleNamespace
-from unittest.mock import patch
 
-from bson import ObjectId
 
 
 class FakeCursor:
