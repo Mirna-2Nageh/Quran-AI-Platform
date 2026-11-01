@@ -42,3 +42,5 @@ class RecitationHistoryItem(BaseModel):
 class RecitationHistoryResponse(BaseModel):
     items: list[RecitationHistoryItem]
     count: int
+    has_more: bool = False
+    next_cursor: str | None = None
