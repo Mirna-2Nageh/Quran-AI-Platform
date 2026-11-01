@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.api.v1.auth import COOKIE_NAME, get_auth_service
 from app.repositories.recitation_sessions import RecitationSessionRepository
+from app.schemas.recitation_api import RecitationHistoryResponse
 from app.services.auth import AuthService
 
 router = APIRouter(prefix="/recitation", tags=["Recitation"])
 
 
-@router.get("/history")
+@router.get("/history", response_model=RecitationHistoryResponse)
 async def get_recitation_history(
     request: Request,
     limit: int = Query(default=20, ge=1, le=50),

@@ -6,6 +6,7 @@ from app.ai.alignment import align_words
 from app.api.v1.auth import COOKIE_NAME, check_origin, get_auth_service
 from app.repositories.recitation_sessions import RecitationSessionRepository
 from app.schemas.recitation import AlignmentIssueResponse, AlignmentResponse
+from app.schemas.recitation_api import RecitationAnalysisResponse
 from app.services.auth import AuthService
 from app.services.quran_asr import ASRError, transcribe_audio_with_metadata
 from app.services.quran_text import (
@@ -22,7 +23,7 @@ MAX_EXPECTED_TEXT_LENGTH = 5000
 SUPPORTED_TYPES = {"audio/webm", "audio/ogg"}
 
 
-@router.post("/analyze")
+@router.post("/analyze", response_model=RecitationAnalysisResponse)
 async def analyze_recitation(
     request: Request,
     audio: UploadFile = File(...),
