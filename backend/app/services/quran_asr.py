@@ -3,6 +3,7 @@
 import asyncio
 import json
 import math
+import os
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
@@ -10,7 +11,12 @@ from pathlib import Path
 
 from app.ai.word_timing import WordTiming, estimate_word_timings
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = Path(
+    os.environ.get(
+        "QURAN_AI_ASR_ROOT",
+        str(Path(__file__).resolve().parents[3]),
+    )
+).resolve()
 
 ASR_PYTHON = PROJECT_ROOT / ".venv-asr/bin/python"
 
