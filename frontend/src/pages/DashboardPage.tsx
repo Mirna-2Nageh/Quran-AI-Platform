@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, History, LogOut, Mic, Sparkles } from "lucide-react";
+import { BookMarked, BookOpen, History, LogOut, Mic, Sparkles } from "lucide-react";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 export function DashboardPage() {
@@ -55,6 +55,13 @@ export function DashboardPage() {
             <span>تجربة المقارنة النصية ←</span>
           </Link>
 
+          <Link to="/memorization" className="feature-card feature-card-link">
+            <BookMarked size={30} />
+            <h2>الحفظ والمراجعة</h2>
+            <p>أنشئ خطة لحفظ القرآن، وسجّل جلسات المراجعة وتابع إنجازك.</p>
+            <span>متابعة الحفظ ←</span>
+          </Link>
+
           <Link
             to="/recitation/history"
             className="feature-card feature-card-link"
@@ -64,6 +71,42 @@ export function DashboardPage() {
             <p>راجع محاولات التلاوة السابقة ونتائج مقارنة الكلمات.</p>
             <span>عرض سجل التلاوات ←</span>
           </Link>
+
+          {user?.role === "admin" && (
+            <Link
+              to="/halaqat/admin"
+              className="feature-card feature-card-link"
+            >
+              <BookOpen size={30} />
+              <h2>إدارة الحلقات القرآنية</h2>
+              <p>إنشاء الحلقات وتعيين المعلمين ومتابعة الإدارة.</p>
+              <span>فتح إدارة الحلقات ←</span>
+            </Link>
+          )}
+
+          {user?.role === "student" && (
+            <Link
+              to="/halaqat/student"
+              className="feature-card feature-card-link"
+            >
+              <BookOpen size={30} />
+              <h2>حلقاتي الدراسية</h2>
+              <p>متابعة حلقات القرآن الكريم وسجل الحضور.</p>
+              <span>عرض حلقاتي ←</span>
+            </Link>
+          )}
+
+          {user?.role === "teacher" && (
+            <Link
+              to="/halaqat/teacher"
+              className="feature-card feature-card-link"
+            >
+              <BookOpen size={30} />
+              <h2>حلقاتي التعليمية</h2>
+              <p>إدارة حلقات القرآن الكريم ومتابعة الجلسات والحضور.</p>
+              <span>عرض الحلقات ←</span>
+            </Link>
+          )}
 
           <article className="feature-card">
             <Sparkles size={30} />
