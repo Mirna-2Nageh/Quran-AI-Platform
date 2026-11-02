@@ -34,6 +34,8 @@ export function AudioRecorder({
   const [wordTimings, setWordTimings] = useState<WordTiming[]>([]);
   const [playbackTime, setPlaybackTime] = useState(0);
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const analysisRequestId = useRef(0);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -45,6 +47,8 @@ export function AudioRecorder({
   }
 
   function clearAudio() {
+    analysisRequestId.current += 1;
+    setUploading(false);
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current);
       urlRef.current = null;
@@ -71,6 +75,7 @@ export function AudioRecorder({
 
     try {
       clearAudio();
+      onRecordingReset();
       chunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -139,6 +144,8 @@ export function AudioRecorder({
       return;
     }
 
+    const requestId = ++analysisRequestId.current;
+    onRecordingReset();
     setUploading(true);
     setError("");
     setAnalysisSuccess(false);
@@ -154,18 +161,50 @@ export function AudioRecorder({
         endAyahNumber,
       );
 
-      onAnalysisComplete(result);
-      setWordTimings(result.word_timings);
-      setAnalysisSuccess(true);
+      if (requestId === analysisRequestId.current) {
+        onAnalysisComplete(result);
+        setWordTimings(result.word_timings);
+        setAnalysisSuccess(true);
+      }
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "تعذر رفع التسجيل.",
-      );
+      if (requestId === analysisRequestId.current) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "تعذر رفع التسجيل.",
+        );
+      }
     } finally {
-      setUploading(false);
+      if (requestId === analysisRequestId.current) {
+        setUploading(false);
+      }
     }
+  }
+
+  function seekToWord(startSeconds: number) {
+    const audio = audioRef.current;
+
+    if (
+      !audio ||
+      !Number.isFinite(startSeconds) ||
+      startSeconds < 0 ||
+      audio.readyState < HTMLMediaElement.HAVE_METADATA
+    ) {
+      return;
+    }
+
+    if (
+      Number.isFinite(audio.duration) &&
+      startSeconds > audio.duration
+    ) {
+      return;
+    }
+
+    audio.currentTime = startSeconds;
+    setPlaybackTime(startSeconds);
+    void audio.play().catch(() => {
+      // Browser playback restrictions may require manual play.
+    });
   }
 
   function stopRecording() {
@@ -188,6 +227,7 @@ export function AudioRecorder({
 
   useEffect(() => {
     return () => {
+      analysisRequestId.current += 1;
       const recorder = recorderRef.current;
 
       if (recorder && recorder.state !== "inactive") {
@@ -234,6 +274,7 @@ export function AudioRecorder({
       {status === "recorded" && audioUrl && (
         <div className="audio-playback">
           <audio
+            ref={audioRef}
             controls
             src={audioUrl}
             onTimeUpdate={(event) =>
@@ -260,12 +301,16 @@ export function AudioRecorder({
                     (end === undefined || playbackTime < end);
 
                   return (
-                    <span
+                    <button
+                      type="button"
                       key={`${index}-${item.start_seconds}`}
                       className={active ? "timed-word active" : "timed-word"}
+                      onClick={() => seekToWord(item.start_seconds)}
+                      aria-label={`استمع من كلمة ${item.word}`}
+                      title={`الانتقال إلى ${item.start_seconds.toFixed(2)} ثانية`}
                     >
                       {item.word}
-                    </span>
+                    </button>
                   );
                 })}
               </div>

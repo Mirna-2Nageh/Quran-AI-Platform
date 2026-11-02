@@ -1,6 +1,7 @@
 import { AudioRecorder } from "../components/AudioRecorder";
+import { buildWordFeedback, tokenizeExpectedWords } from "../utils/wordFeedback";
 import type { AudioAnalysisResponse } from "../api/audio";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { BookOpen, GitCompareArrows } from "lucide-react";
 
@@ -48,6 +49,7 @@ export function RecitationPracticePage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const alignmentRequestId = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,9 +97,23 @@ export function RecitationPracticePage() {
 
   const hasSelection = selectedAyahs.length > 0;
 
+  const wordFeedback =
+    result && hasSelection
+      ? buildWordFeedback(expectedText, result)
+      : null;
+
+
+  function invalidateAlignment() {
+    alignmentRequestId.current += 1;
+    setResult(null);
+    setError("");
+    setSubmitting(false);
+  }
+
   function handleAudioAnalysis(
     analysis: AudioAnalysisResponse,
   ) {
+    alignmentRequestId.current += 1;
     setRecognizedText(analysis.recognized_text);
     setResult(analysis.alignment);
     setError("");
@@ -108,6 +124,7 @@ export function RecitationPracticePage() {
 
     if (!hasSelection || !recognizedText.trim()) return;
 
+    const requestId = ++alignmentRequestId.current;
     setError("");
     setSubmitting(true);
     setResult(null);
@@ -117,17 +134,24 @@ export function RecitationPracticePage() {
         expected_text: expectedText,
         recognized_text: recognizedText,
       });
-      setResult(response);
+      if (requestId === alignmentRequestId.current) {
+        setResult(response);
+      }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "تعذر مقارنة النصوص",
-      );
+      if (requestId === alignmentRequestId.current) {
+        setError(
+          err instanceof Error ? err.message : "تعذر مقارنة النصوص",
+        );
+      }
     } finally {
-      setSubmitting(false);
+      if (requestId === alignmentRequestId.current) {
+        setSubmitting(false);
+      }
     }
   }
 
   function changeSurah(value: number) {
+    invalidateAlignment();
     setRequestedSelection({ surah: value, ayah: 1 });
     setLoading(true);
     setError("");
@@ -138,6 +162,7 @@ export function RecitationPracticePage() {
   }
 
   function changeAyah(value: number) {
+    invalidateAlignment();
     setAyahNumber(value);
     setEndAyahNumber((current) =>
       Math.min(Math.max(current, value), value + 9),
@@ -148,6 +173,7 @@ export function RecitationPracticePage() {
   }
 
   function changeEndAyah(value: number) {
+    invalidateAlignment();
     setEndAyahNumber(value);
     setRecognizedText("");
     setResult(null);
@@ -241,11 +267,111 @@ export function RecitationPracticePage() {
 
           {hasSelection && (
             <div className="expected-ayah" lang="ar">
-              {selectedAyahs.map((ayah) => (
-                <span key={ayah.number}>
-                  {ayah.text} ﴿{ayah.numberInSurah}﴾{" "}
-                </span>
-              ))}
+              {selectedAyahs.map((ayah, ayahIndex) => {
+                const precedingText = selectedAyahs
+                  .slice(0, ayahIndex)
+                  .map((item) => item.text)
+                  .join(" ");
+
+                const wordOffset = tokenizeExpectedWords(
+                  precedingText,
+                ).length;
+
+                return (
+                  <span key={ayah.number}>
+                    {ayah.text.split(/(\\s+)/).map((part, partIndex) => {
+                      if (!part.trim()) {
+                        return <span key={partIndex}>{part}</span>;
+                      }
+
+                      const precedingParts = ayah.text
+                        .split(/(\s+)/)
+                        .slice(0, partIndex)
+                        .join("");
+
+                      const localIndex = tokenizeExpectedWords(
+                        precedingParts,
+                      ).length;
+
+                      const isAlignableWord =
+                        tokenizeExpectedWords(part).length === 1;
+
+                      const feedback =
+                        wordFeedback?.canHighlight && isAlignableWord
+                          ? wordFeedback.words[wordOffset + localIndex]
+                          : null;
+
+                      return (
+                        <span
+                          key={partIndex}
+                          className={
+                            feedback
+                              ? `recitation-feedback-word ${feedback.status}`
+                              : undefined
+                          }
+                          title={
+                            feedback?.status === "substituted"
+                              ? `تم التعرف على: ${feedback.recognizedWord ?? "غير معروف"}`
+                              : feedback?.status === "missing"
+                                ? "الكلمة غير موجودة في النص المتعرف عليه"
+                                : undefined
+                          }
+                        >
+                          {part}
+                        </span>
+                      );
+                    })}
+                    {" "}﴿{ayah.numberInSurah}﴾{" "}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {wordFeedback && (
+            <div className="recitation-feedback-summary">
+              <p>
+                نسبة التطابق النصي:{" "}
+                <strong>{wordFeedback.matchPercentage}%</strong>
+              </p>
+
+              {wordFeedback.canHighlight ? (
+                <div
+                  className="recitation-feedback-legend"
+                  aria-label="دليل ألوان مقارنة الكلمات"
+                >
+                  <span className="recitation-feedback-word matched">
+                    متطابقة نصيًا
+                  </span>
+                  <span className="recitation-feedback-word substituted">
+                    مختلفة
+                  </span>
+                  <span className="recitation-feedback-word missing">
+                    ناقصة
+                  </span>
+                </div>
+              ) : (
+                <p role="status">
+                  تعذر ربط بعض الكلمات بالنص المعروض بدقة؛
+                  لذلك تم تعطيل التلوين لتجنب نتائج مضللة.
+                </p>
+              )}
+
+              {wordFeedback.extraWords.length > 0 && (
+                <div className="recitation-extra-words">
+                  <strong>كلمات إضافية في النص المتعرف عليه:</strong>
+                  <p>
+                    {wordFeedback.extraWords
+                      .map((item) => item.word)
+                      .join("، ")}
+                  </p>
+                </div>
+              )}
+
+              <small>
+                هذه مقارنة نصية بعد التطبيع، وليست تقييمًا للتجويد
+                أو مخارج الحروف.
+              </small>
             </div>
           )}
 
@@ -258,8 +384,8 @@ export function RecitationPracticePage() {
               endAyahNumber={endAyahNumber}
               onAnalysisComplete={handleAudioAnalysis}
               onRecordingReset={() => {
+                invalidateAlignment();
                 setRecognizedText("");
-                setResult(null);
               }}
             />
           )}
@@ -273,9 +399,10 @@ export function RecitationPracticePage() {
               id="recognizedText"
               rows={4}
               value={recognizedText}
-              onChange={(event) =>
-                setRecognizedText(event.target.value)
-              }
+              onChange={(event) => {
+                invalidateAlignment();
+                setRecognizedText(event.target.value);
+              }}
               placeholder="أدخل نص التلاوة هنا..."
               required
             />
