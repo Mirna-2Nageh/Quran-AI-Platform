@@ -58,6 +58,24 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
         ]
     )
 
+    await app.state.database["halaqat"].create_index(
+        [("teacher_id", 1), ("status", 1)]
+    )
+    await app.state.database["halaqa_enrollments"].create_index(
+        [("halaqa_id", 1), ("student_id", 1)],
+        unique=True,
+    )
+    await app.state.database["halaqa_enrollments"].create_index(
+        [("student_id", 1), ("status", 1)]
+    )
+    await app.state.database["halaqa_sessions"].create_index(
+        [("halaqa_id", 1), ("scheduled_at", 1)]
+    )
+    await app.state.database["halaqa_attendance"].create_index(
+        [("session_id", 1), ("student_id", 1)],
+        unique=True,
+    )
+
     logger.info("Successfully connected to MongoDB.")
 
 

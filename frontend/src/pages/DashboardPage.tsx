@@ -72,6 +72,42 @@ export function DashboardPage() {
             <span>عرض سجل التلاوات ←</span>
           </Link>
 
+          {user?.role === "admin" && (
+            <Link
+              to="/halaqat/admin"
+              className="feature-card feature-card-link"
+            >
+              <BookOpen size={30} />
+              <h2>إدارة الحلقات القرآنية</h2>
+              <p>إنشاء الحلقات وتعيين المعلمين ومتابعة الإدارة.</p>
+              <span>فتح إدارة الحلقات ←</span>
+            </Link>
+          )}
+
+          {user?.role === "student" && (
+            <Link
+              to="/halaqat/student"
+              className="feature-card feature-card-link"
+            >
+              <BookOpen size={30} />
+              <h2>حلقاتي الدراسية</h2>
+              <p>متابعة حلقات القرآن الكريم وسجل الحضور.</p>
+              <span>عرض حلقاتي ←</span>
+            </Link>
+          )}
+
+          {user?.role === "teacher" && (
+            <Link
+              to="/halaqat/teacher"
+              className="feature-card feature-card-link"
+            >
+              <BookOpen size={30} />
+              <h2>حلقاتي التعليمية</h2>
+              <p>إدارة حلقات القرآن الكريم ومتابعة الجلسات والحضور.</p>
+              <span>عرض الحلقات ←</span>
+            </Link>
+          )}
+
           <article className="feature-card">
             <Sparkles size={30} />
             <h2>المساعد الذكي</h2>

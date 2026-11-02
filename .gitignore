@@ -87,3 +87,5 @@ tests/audio_samples/
 /backend/data/quran/uthmani.sha256
 
 .env.docker
+
+.env.mongo.test
