@@ -8,6 +8,7 @@ import { RecitationPracticePage } from "../features/recitation/pages/RecitationP
 import { RecitationHistoryPage } from "../features/recitation/pages/RecitationHistoryPage";
 import { QuranReaderPage } from "../features/quran/pages/QuranReaderPage";
 import { SurahDetailPage } from "../features/quran/pages/SurahDetailPage";
+import { MemorizationPage } from "../features/memorization/pages/MemorizationPage";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
 
           <Route element={<ProtectedRoute />}>
+            <Route path="/memorization" element={<MemorizationPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/recitation" element={<RecitationPracticePage />} />
             <Route path="/recitation/history" element={<RecitationHistoryPage />} />

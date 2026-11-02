@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, History, LogOut, Mic, Sparkles } from "lucide-react";
+import { BookMarked, BookOpen, History, LogOut, Mic, Sparkles } from "lucide-react";
 import { useAuth } from "../features/auth/hooks/useAuth";
 
 export function DashboardPage() {
@@ -53,6 +53,13 @@ export function DashboardPage() {
             <h2>تدريب التلاوة</h2>
             <p>قارن نص التلاوة بالنص القرآني المتوقع.</p>
             <span>تجربة المقارنة النصية ←</span>
+          </Link>
+
+          <Link to="/memorization" className="feature-card feature-card-link">
+            <BookMarked size={30} />
+            <h2>الحفظ والمراجعة</h2>
+            <p>أنشئ خطة لحفظ القرآن، وسجّل جلسات المراجعة وتابع إنجازك.</p>
+            <span>متابعة الحفظ ←</span>
           </Link>
 
           <Link

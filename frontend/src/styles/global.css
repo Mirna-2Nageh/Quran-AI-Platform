@@ -824,3 +824,73 @@ button.timed-word:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* Memorization */
+.feature-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: transform .2s, border-color .2s;
+}
+.feature-card-link:hover {
+  transform: translateY(-3px);
+  border-color: #17654d;
+}
+
+.memorization-page {
+  max-width: 1050px;
+  margin: 45px auto;
+  padding: 0 24px 70px;
+}
+.memorization-nav {
+  margin-bottom: 28px;
+  color: #718078;
+  font-size: 14px;
+}
+.memorization-page section {
+  background: white;
+  border: 1px solid #e1e9e1;
+  border-radius: 18px;
+  padding: 25px;
+  margin-top: 24px;
+}
+.memorization-page section h2 {
+  margin-top: 0;
+  font-size: 21px;
+}
+.memorization-page form {
+  margin-top: 18px;
+}
+.memorization-page select,
+.memorization-page textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d5dfd7;
+  border-radius: 10px;
+  background: #fbfcfa;
+  font: inherit;
+}
+.memorization-page label {
+  display: grid;
+  gap: 7px;
+}
+.memorization-page progress {
+  width: 100%;
+  height: 16px;
+  accent-color: #17654d;
+}
+.memorization-page article {
+  background: #fbfcfa;
+}
+.memorization-page article button {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: 1px solid #17654d;
+  border-radius: 9px;
+  color: #17654d;
+  background: white;
+}
+@media (max-width: 700px) {
+  .memorization-page { margin-top: 25px; }
+  .memorization-page section { padding: 18px; }
+}
