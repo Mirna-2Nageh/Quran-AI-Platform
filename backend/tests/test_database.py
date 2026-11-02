@@ -36,17 +36,23 @@ def test_successful_connection_initializes_database_state() -> None:
     sessions_collection = MagicMock()
     login_attempts_collection = MagicMock()
     recitation_sessions_collection = MagicMock()
+    memorization_plans_collection = MagicMock()
+    memorization_sessions_collection = MagicMock()
 
     users_collection.create_index = AsyncMock()
     sessions_collection.create_index = AsyncMock()
     login_attempts_collection.create_index = AsyncMock()
     recitation_sessions_collection.create_index = AsyncMock()
+    memorization_plans_collection.create_index = AsyncMock()
+    memorization_sessions_collection.create_index = AsyncMock()
 
     database.__getitem__.side_effect = {
         "users": users_collection,
         "sessions": sessions_collection,
         "login_attempts": login_attempts_collection,
         "recitation_sessions": recitation_sessions_collection,
+        "memorization_plans": memorization_plans_collection,
+        "memorization_sessions": memorization_sessions_collection,
     }.__getitem__
 
     client.__getitem__.return_value = database
@@ -69,6 +75,14 @@ def test_successful_connection_initializes_database_state() -> None:
 
     recitation_sessions_collection.create_index.assert_awaited_once_with(
         [("user_id", 1), ("created_at", -1), ("_id", -1)]
+    )
+
+
+    memorization_plans_collection.create_index.assert_awaited_once_with(
+        [("user_id", 1), ("created_at", -1), ("_id", -1)]
+    )
+    memorization_sessions_collection.create_index.assert_awaited_once_with(
+        [("user_id", 1), ("plan_id", 1), ("completed_at", -1), ("_id", -1)]
     )
 
 

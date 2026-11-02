@@ -92,3 +92,26 @@ def get_quran_text(
         ayah["text"]
         for ayah in ayahs[start_ayah - 1 : end_ayah]
     )
+
+
+
+def validate_quran_range(
+    surah_number: int,
+    start_ayah: int,
+    end_ayah: int,
+) -> int:
+    """Validate a memorization range and return its ayah count."""
+
+    if not 1 <= surah_number <= 114:
+        raise QuranTextError("Invalid surah number")
+
+    if start_ayah < 1 or end_ayah < start_ayah:
+        raise QuranTextError("Invalid ayah range")
+
+    data = load_quran()
+    ayahs = data["surahs"][surah_number - 1]["ayahs"]
+
+    if end_ayah > len(ayahs):
+        raise QuranTextError("Ayah number exceeds surah length")
+
+    return end_ayah - start_ayah + 1

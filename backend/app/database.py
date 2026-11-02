@@ -45,6 +45,19 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
         [("user_id", 1), ("created_at", -1), ("_id", -1)]
     )
 
+    await app.state.database["memorization_plans"].create_index(
+        [("user_id", 1), ("created_at", -1), ("_id", -1)]
+    )
+
+    await app.state.database["memorization_sessions"].create_index(
+        [
+            ("user_id", 1),
+            ("plan_id", 1),
+            ("completed_at", -1),
+            ("_id", -1),
+        ]
+    )
+
     logger.info("Successfully connected to MongoDB.")
 
 
