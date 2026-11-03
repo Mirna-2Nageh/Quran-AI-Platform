@@ -59,11 +59,18 @@ def test_successful_connection_initializes_database_state() -> None:
     memorization_plans_collection.create_index = AsyncMock()
     memorization_sessions_collection.create_index = AsyncMock()
 
+    quran_bookmarks_collection = MagicMock()
+    quran_reading_progress_collection = MagicMock()
+    quran_bookmarks_collection.create_index = AsyncMock()
+    quran_reading_progress_collection.create_index = AsyncMock()
+
     database.__getitem__.side_effect = {
         "halaqat": halaqat_collection,
         "halaqa_enrollments": enrollments_collection,
         "halaqa_sessions": halaqa_sessions_collection,
         "halaqa_attendance": attendance_collection,
+        "quran_bookmarks": quran_bookmarks_collection,
+        "quran_reading_progress": quran_reading_progress_collection,
         "users": users_collection,
         "sessions": sessions_collection,
         "login_attempts": login_attempts_collection,
@@ -76,6 +83,15 @@ def test_successful_connection_initializes_database_state() -> None:
 
     with patch("app.database.AsyncMongoClient", return_value=client):
         asyncio.run(connect_to_mongo(app, settings))
+
+    quran_bookmarks_collection.create_index.assert_awaited_once_with(
+        [("user_id", 1), ("surah_number", 1), ("ayah_number", 1)],
+        unique=True,
+    )
+    quran_reading_progress_collection.create_index.assert_awaited_once_with(
+        "user_id",
+        unique=True,
+    )
 
     client.admin.command.assert_awaited_once_with("ping")
     assert app.state.mongo_client is client

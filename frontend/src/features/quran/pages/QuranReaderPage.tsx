@@ -3,12 +3,26 @@ import { Link } from "react-router-dom";
 import { BookOpen, Search } from "lucide-react";
 import { getSurahs, type Surah } from "../api/quran";
 import { SurahCard } from "../components/SurahCard";
+import { useAuth } from "../../auth/hooks/useAuth";
+import {
+  getReadingProgress,
+  listBookmarks,
+  type Bookmark,
+  type ReadingProgress,
+} from "../api/reading";
+
 
 export function QuranReaderPage() {
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { user } = useAuth();
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [progress, setProgress] = useState<ReadingProgress | null>(null);
+  const [readingLoading, setReadingLoading] = useState(false);
+  const [readingError, setReadingError] = useState("");
+
 
   useEffect(() => {
     getSurahs()
@@ -18,6 +32,41 @@ export function QuranReaderPage() {
       )
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setBookmarks([]);
+    setProgress(null);
+    setReadingError("");
+
+    if (!user) {
+      setReadingLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setReadingLoading(true);
+
+    Promise.all([listBookmarks(), getReadingProgress()])
+      .then(([savedBookmarks, savedProgress]) => {
+        if (cancelled) return;
+        setBookmarks(savedBookmarks.items);
+        setProgress(savedProgress);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setReadingError(
+            err instanceof Error ? err.message : "تعذر تحميل بيانات القراءة",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setReadingLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const filteredSurahs = surahs.filter((surah) => {
     const query = search.trim().toLowerCase();
@@ -44,6 +93,55 @@ export function QuranReaderPage() {
         <p className="muted">
           اختر سورة للبدء في القراءة والتعلم.
         </p>
+
+        {user && (
+          <section className="surah-detail" aria-label="قراءتي المحفوظة">
+            <h2>متابعة القراءة</h2>
+
+            {readingLoading && (
+              <p role="status">جاري تحميل بيانات القراءة...</p>
+            )}
+
+            {readingError && (
+              <p className="form-error" role="alert">{readingError}</p>
+            )}
+
+            {!readingLoading && progress && (
+              <p>
+                <Link
+                  to={`/quran/${progress.surah_number}?ayah=${progress.ayah_number}`}
+                >
+                  متابعة من{" "}
+                  {surahs.find((s) => s.number === progress.surah_number)?.name
+                    ?? progress.surah_number}
+                  {" "}— الآية {progress.ayah_number}
+                </Link>
+              </p>
+            )}
+
+            {!readingLoading && !progress && !readingError && (
+              <p className="muted">لم يتم حفظ موضع قراءة بعد.</p>
+            )}
+
+            <h2>العلامات المرجعية</h2>
+
+            {!readingLoading && bookmarks.length === 0 && !readingError && (
+              <p className="muted">لا توجد آيات محفوظة بعد.</p>
+            )}
+
+            {bookmarks.map((bookmark) => (
+              <p key={`${bookmark.surah_number}:${bookmark.ayah_number}`}>
+                <Link
+                  to={`/quran/${bookmark.surah_number}?ayah=${bookmark.ayah_number}`}
+                >
+                  {surahs.find((s) => s.number === bookmark.surah_number)?.name
+                    ?? `سورة ${bookmark.surah_number}`}
+                  {" "}— الآية {bookmark.ayah_number}
+                </Link>
+              </p>
+            ))}
+          </section>
+        )}
 
         <div className="surah-search">
           <Search size={20} />

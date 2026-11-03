@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowRight, BookOpen } from "lucide-react";
+import { useAuth } from "../../auth/hooks/useAuth";
+import {
+  addBookmark,
+  listBookmarks,
+  removeBookmark,
+  getReadingProgress,
+  saveReadingProgress,
+} from "../api/reading";
+
 import {
   getSurah,
   getAyahTafsir,
@@ -10,7 +19,18 @@ import {
 
 export function SurahDetailPage() {
   const { number } = useParams();
+  const [searchParams] = useSearchParams();
+  const targetAyah = Number(searchParams.get("ayah"));
   const surahNumber = Number(number);
+
+  const { user } = useAuth();
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [bookmarkBusy, setBookmarkBusy] = useState<number | null>(null);
+  const [bookmarkError, setBookmarkError] = useState("");
+  const [progressBusy, setProgressBusy] = useState<number | null>(null);
+  const [progressSaved, setProgressSaved] = useState<number | null>(null);
+  const [progressError, setProgressError] = useState("");
+
 
   const [surah, setSurah] = useState<SurahDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +65,106 @@ export function SurahDetailPage() {
       cancelled = true;
     };
   }, [surahNumber, selectedAyah, tafsirRetry]);
+
+  useEffect(() => {
+    if (!user) {
+      setBookmarks([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    listBookmarks()
+      .then((data) => {
+        if (!cancelled) {
+          setBookmarks(
+            data.items
+              .filter((item) => item.surah_number === surahNumber)
+              .map((item) => item.ayah_number),
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setBookmarkError(
+            err instanceof Error ? err.message : "تعذر تحميل المحفوظات",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, surahNumber]);
+
+  async function toggleBookmark(ayahNumber: number) {
+    if (!user || bookmarkBusy !== null) return;
+
+    setBookmarkBusy(ayahNumber);
+    setBookmarkError("");
+
+    try {
+      if (bookmarks.includes(ayahNumber)) {
+        await removeBookmark(surahNumber, ayahNumber);
+        setBookmarks((current) => current.filter((n) => n !== ayahNumber));
+      } else {
+        await addBookmark(surahNumber, ayahNumber);
+        setBookmarks((current) => [...current, ayahNumber]);
+      }
+    } catch (err) {
+      setBookmarkError(
+        err instanceof Error ? err.message : "تعذر تحديث المحفوظات",
+      );
+    } finally {
+      setBookmarkBusy(null);
+    }
+  }
+
+  useEffect(() => {
+    setProgressSaved(null);
+    if (!user) return;
+
+    let cancelled = false;
+
+    getReadingProgress()
+      .then((progress) => {
+        if (!cancelled && progress?.surah_number === surahNumber) {
+          setProgressSaved(progress.ayah_number);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setProgressError(
+            err instanceof Error ? err.message : "تعذر تحميل موضع القراءة",
+          );
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, surahNumber]);
+
+  async function saveProgress(ayahNumber: number) {
+    if (!user || progressBusy !== null) return;
+
+    setProgressBusy(ayahNumber);
+    setProgressError("");
+
+    try {
+      await saveReadingProgress({
+        surah_number: surahNumber,
+        ayah_number: ayahNumber,
+      });
+      setProgressSaved(ayahNumber);
+    } catch (err) {
+      setProgressError(
+        err instanceof Error ? err.message : "تعذر حفظ موضع القراءة",
+      );
+    } finally {
+      setProgressBusy(null);
+    }
+  }
 
   function toggleTafsir(ayahNumber: number) {
     const ayahKey = `${surahNumber}:${ayahNumber}`;
@@ -93,6 +213,16 @@ export function SurahDetailPage() {
     };
   }, [surahNumber]);
 
+  useEffect(() => {
+    if (!surah || !Number.isInteger(targetAyah)) return;
+    if (targetAyah < 1 || targetAyah > surah.numberOfAyahs) return;
+
+    const element = document.getElementById(
+      `quran-ayah-${surahNumber}-${targetAyah}`,
+    );
+    element?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [surah, surahNumber, targetAyah]);
+
   if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
     return (
       <main className="quran-content" dir="rtl">
@@ -130,9 +260,21 @@ export function SurahDetailPage() {
               </p>
             </div>
 
+            {progressError && (
+              <p className="form-error" role="alert">{progressError}</p>
+            )}
+
+            {bookmarkError && (
+              <p className="form-error" role="alert">{bookmarkError}</p>
+            )}
+
             <div className="ayah-list">
               {surah.ayahs.map((ayah) => (
-                <article className="ayah-row" key={ayah.numberInSurah}>
+                <article
+                  className="ayah-row"
+                  id={`quran-ayah-${surahNumber}-${ayah.numberInSurah}`}
+                  key={ayah.numberInSurah}
+                >
                   <span className="ayah-badge">
                     {ayah.numberInSurah}
                   </span>
@@ -141,12 +283,43 @@ export function SurahDetailPage() {
                       {ayah.text}
                     </p>
 
+                    {user && (
+                      <button
+                        type="button"
+                        className="tafsir-toggle"
+                        disabled={progressBusy !== null}
+                        onClick={() => saveProgress(ayah.numberInSurah)}
+                      >
+                        {progressBusy === ayah.numberInSurah
+                          ? "جاري حفظ موضع القراءة..."
+                          : progressSaved === ayah.numberInSurah
+                            ? "تم حفظ موضع القراءة"
+                            : "حفظ موضع القراءة"}
+                      </button>
+                    )}
+
                     <Link
                       to={`/recitation?surah=${surahNumber}&ayah=${ayah.numberInSurah}`}
                       className="ayah-practice-link"
                     >
                       ابدأ تسميع هذه الآية
                     </Link>
+
+                    {user && (
+                      <button
+                        type="button"
+                        className="tafsir-toggle"
+                        disabled={bookmarkBusy !== null}
+                        aria-pressed={bookmarks.includes(ayah.numberInSurah)}
+                        onClick={() => toggleBookmark(ayah.numberInSurah)}
+                      >
+                        {bookmarkBusy === ayah.numberInSurah
+                          ? "جاري الحفظ..."
+                          : bookmarks.includes(ayah.numberInSurah)
+                            ? "إزالة العلامة المرجعية"
+                            : "حفظ الآية"}
+                      </button>
+                    )}
 
                     <button
                       type="button"
