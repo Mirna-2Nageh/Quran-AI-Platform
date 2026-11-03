@@ -18,12 +18,19 @@ import {
 } from "../api/quran";
 
 export function SurahDetailPage() {
+  const { user } = useAuth();
+  const { number } = useParams();
+  return <SurahDetailContent key={`${user?.id ?? "guest"}:${number}`} />;
+}
+
+function SurahDetailContent() {
   const { number } = useParams();
   const [searchParams] = useSearchParams();
   const targetAyah = Number(searchParams.get("ayah"));
   const surahNumber = Number(number);
 
   const { user } = useAuth();
+  const userId = user?.id;
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [bookmarkBusy, setBookmarkBusy] = useState<number | null>(null);
   const [bookmarkError, setBookmarkError] = useState("");
@@ -67,10 +74,7 @@ export function SurahDetailPage() {
   }, [surahNumber, selectedAyah, tafsirRetry]);
 
   useEffect(() => {
-    if (!user) {
-      setBookmarks([]);
-      return;
-    }
+    if (!userId) return;
 
     let cancelled = false;
 
@@ -95,7 +99,7 @@ export function SurahDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, surahNumber]);
+  }, [userId, surahNumber]);
 
   async function toggleBookmark(ayahNumber: number) {
     if (!user || bookmarkBusy !== null) return;
@@ -121,8 +125,7 @@ export function SurahDetailPage() {
   }
 
   useEffect(() => {
-    setProgressSaved(null);
-    if (!user) return;
+    if (!userId) return;
 
     let cancelled = false;
 
@@ -143,7 +146,7 @@ export function SurahDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, surahNumber]);
+  }, [userId, surahNumber]);
 
   async function saveProgress(ayahNumber: number) {
     if (!user || progressBusy !== null) return;

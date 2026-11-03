@@ -13,14 +13,20 @@ import {
 
 
 export function QuranReaderPage() {
+  const { user } = useAuth();
+  return <QuranReaderContent key={user?.id ?? "guest"} />;
+}
+
+function QuranReaderContent() {
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { user } = useAuth();
+  const userId = user?.id;
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [progress, setProgress] = useState<ReadingProgress | null>(null);
-  const [readingLoading, setReadingLoading] = useState(false);
+  const [readingLoading, setReadingLoading] = useState(Boolean(userId));
   const [readingError, setReadingError] = useState("");
 
 
@@ -34,17 +40,9 @@ export function QuranReaderPage() {
   }, []);
 
   useEffect(() => {
-    setBookmarks([]);
-    setProgress(null);
-    setReadingError("");
-
-    if (!user) {
-      setReadingLoading(false);
-      return;
-    }
+    if (!userId) return;
 
     let cancelled = false;
-    setReadingLoading(true);
 
     Promise.all([listBookmarks(), getReadingProgress()])
       .then(([savedBookmarks, savedProgress]) => {
@@ -66,7 +64,7 @@ export function QuranReaderPage() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [userId]);
 
   const filteredSurahs = surahs.filter((surah) => {
     const query = search.trim().toLowerCase();
