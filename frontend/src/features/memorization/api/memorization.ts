@@ -18,6 +18,7 @@ export interface MemorizationPlan {
 export interface MemorizationSession {
   id: string;
   plan_id: string;
+  recitation_session_id?: string | null;
   session_type: SessionType;
   result: SessionResult;
   notes: string | null;
@@ -78,6 +79,7 @@ export const createSession = (
     session_type: SessionType;
     result: SessionResult;
     notes: string | null;
+    recitation_session_id?: string;
   },
 ) =>
   writeRequest<MemorizationSession>(

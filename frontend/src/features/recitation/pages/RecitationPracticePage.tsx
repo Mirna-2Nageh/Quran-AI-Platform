@@ -7,6 +7,13 @@ import { BookOpen, GitCompareArrows } from "lucide-react";
 
 import { getSurah, type SurahDetail } from "../../quran/api/quran";
 import {
+  createSession,
+  listPlans,
+  type MemorizationPlan,
+  type SessionType,
+  type SessionResult,
+} from "../../memorization/api/memorization";
+import {
   alignRecitation,
   type AlignmentResponse,
   type AlignmentIssue,
@@ -46,6 +53,15 @@ export function RecitationPracticePage() {
   const [endAyahNumber, setEndAyahNumber] = useState(1);
   const [recognizedText, setRecognizedText] = useState("");
   const [result, setResult] = useState<AlignmentResponse | null>(null);
+  const [recitationSessionId, setRecitationSessionId] = useState<string | null>(null);
+  const [memorizationPlans, setMemorizationPlans] = useState<MemorizationPlan[]>([]);
+  const [plansError, setPlansError] = useState("");
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [sessionType, setSessionType] = useState<SessionType>("memorization");
+  const [sessionResult, setSessionResult] = useState<SessionResult>("needs_review");
+  const [linking, setLinking] = useState(false);
+  const [linkError, setLinkError] = useState("");
+  const [linkSuccess, setLinkSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -105,6 +121,13 @@ export function RecitationPracticePage() {
 
   function invalidateAlignment() {
     alignmentRequestId.current += 1;
+    setRecitationSessionId(null);
+    setMemorizationPlans([]);
+    setPlansError("");
+    setSelectedPlanId("");
+    setLinkError("");
+    setLinkSuccess(false);
+    setLinking(false);
     setResult(null);
     setError("");
     setSubmitting(false);
@@ -115,6 +138,27 @@ export function RecitationPracticePage() {
   ) {
     alignmentRequestId.current += 1;
     setRecognizedText(analysis.recognized_text);
+    setRecitationSessionId(analysis.session_id);
+    setSelectedPlanId("");
+    setLinkError("");
+    setLinkSuccess(false);
+    setLinking(false);
+    setMemorizationPlans([]);
+    setPlansError("");
+    const requestId = alignmentRequestId.current;
+    void listPlans()
+      .then((plans) => {
+        if (requestId === alignmentRequestId.current) {
+          setMemorizationPlans(plans);
+        }
+      })
+      .catch((err: unknown) => {
+        if (requestId === alignmentRequestId.current) {
+          setPlansError(
+            err instanceof Error ? err.message : "تعذر تحميل خطط الحفظ",
+          );
+        }
+      });
     setResult(analysis.alignment);
     setError("");
   }
@@ -127,6 +171,13 @@ export function RecitationPracticePage() {
     const requestId = ++alignmentRequestId.current;
     setError("");
     setSubmitting(true);
+    setRecitationSessionId(null);
+    setMemorizationPlans([]);
+    setPlansError("");
+    setSelectedPlanId("");
+    setLinkError("");
+    setLinkSuccess(false);
+    setLinking(false);
     setResult(null);
 
     try {
@@ -146,6 +197,39 @@ export function RecitationPracticePage() {
     } finally {
       if (requestId === alignmentRequestId.current) {
         setSubmitting(false);
+      }
+    }
+  }
+
+  async function handleLinkSession(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!recitationSessionId || !selectedPlanId || linking || linkSuccess) return;
+
+    const requestId = alignmentRequestId.current;
+    const sessionId = recitationSessionId;
+    setLinking(true);
+    setLinkError("");
+
+    try {
+      await createSession(selectedPlanId, {
+        session_type: sessionType,
+        result: sessionResult,
+        notes: null,
+        recitation_session_id: sessionId,
+      });
+
+      if (requestId === alignmentRequestId.current) {
+        setLinkSuccess(true);
+      }
+    } catch (err: unknown) {
+      if (requestId === alignmentRequestId.current) {
+        setLinkError(
+          err instanceof Error ? err.message : "تعذر ربط التلاوة بالخطة",
+        );
+      }
+    } finally {
+      if (requestId === alignmentRequestId.current) {
+        setLinking(false);
       }
     }
   }
@@ -418,6 +502,81 @@ export function RecitationPracticePage() {
 
           {error && (
             <p className="form-error" role="alert">{error}</p>
+          )}
+
+          {recitationSessionId && (
+            <p role="status">
+              تم حفظ التلاوة، ويمكن ربطها بخطة حفظ.
+            </p>
+          )}
+
+          {recitationSessionId && (
+            <section aria-label="ربط التلاوة بخطة حفظ">
+              <h2>ربط التلاوة بخطة حفظ</h2>
+              {plansError && <p role="alert">{plansError}</p>}
+              <form onSubmit={handleLinkSession}>
+                <label htmlFor="memorizationPlan">خطة الحفظ</label>
+                <select
+                  id="memorizationPlan"
+                  value={selectedPlanId}
+                  onChange={(event) => setSelectedPlanId(event.target.value)}
+                  disabled={linking || linkSuccess}
+                  required
+                >
+                  <option value="">اختر خطة متوافقة</option>
+                  {memorizationPlans
+                    .filter((plan) =>
+                      plan.surah_number === surahNumber &&
+                      plan.start_ayah <= ayahNumber &&
+                      plan.end_ayah >= endAyahNumber
+                    )
+                    .map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        الآيات {plan.start_ayah}–{plan.end_ayah}
+                      </option>
+                    ))}
+                </select>
+
+                <label htmlFor="sessionType">نوع الجلسة</label>
+                <select
+                  id="sessionType"
+                  value={sessionType}
+                  onChange={(event) =>
+                    setSessionType(event.target.value as SessionType)
+                  }
+                  disabled={linking || linkSuccess}
+                >
+                  <option value="memorization">حفظ</option>
+                  <option value="revision">مراجعة</option>
+                </select>
+
+                <label htmlFor="sessionResult">نتيجة الجلسة</label>
+                <select
+                  id="sessionResult"
+                  value={sessionResult}
+                  onChange={(event) =>
+                    setSessionResult(event.target.value as SessionResult)
+                  }
+                  disabled={linking || linkSuccess}
+                >
+                  <option value="needs_review">تحتاج مراجعة</option>
+                  <option value="completed">مكتملة</option>
+                  <option value="incomplete">غير مكتملة</option>
+                </select>
+
+                <button
+                  type="submit"
+                  disabled={!selectedPlanId || linking || linkSuccess}
+                >
+                  {linking ? "جاري الحفظ..." : linkSuccess ? "تم الربط" : "حفظ الجلسة"}
+                </button>
+              </form>
+
+              {linkError && <p role="alert">{linkError}</p>}
+              {linkSuccess && (
+                <p role="status">تم ربط التلاوة بخطة الحفظ بنجاح.</p>
+              )}
+            </section>
           )}
 
           {result && (

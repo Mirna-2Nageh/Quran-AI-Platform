@@ -1,6 +1,7 @@
 """Authenticated Quran memorization endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pymongo.errors import DuplicateKeyError
 
 from app.api.v1.auth import (
     COOKIE_NAME,
@@ -8,6 +9,7 @@ from app.api.v1.auth import (
     get_auth_service,
 )
 from app.repositories.memorization import MemorizationRepository
+from app.repositories.recitation_sessions import RecitationSessionRepository
 from app.schemas.memorization import (
     MemorizationPlanCreate,
     MemorizationPlanResponse,
@@ -55,15 +57,12 @@ async def verify_memorization_write(
     return user
 
 
-
 @router.get("/progress", response_model=MemorizationProgressResponse)
 async def get_memorization_progress(
     request: Request,
     user=Depends(get_current_memorization_user),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
     return await service.get_progress(user_id=user["_id"])
 
 
@@ -73,9 +72,7 @@ async def create_memorization_plan(
     request: Request,
     user=Depends(verify_memorization_write),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
 
     try:
         plan = await service.create_plan(
@@ -104,9 +101,7 @@ async def list_memorization_plans(
     limit: int = Query(default=20, ge=1, le=50),
     user=Depends(get_current_memorization_user),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
     plans = await service.list_plans(
         user_id=user["_id"],
         limit=limit,
@@ -131,9 +126,7 @@ async def get_memorization_plan(
     request: Request,
     user=Depends(get_current_memorization_user),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
     plan = await service.get_plan(
         user_id=user["_id"],
         plan_id=plan_id,
@@ -163,9 +156,7 @@ async def update_memorization_plan(
     request: Request,
     user=Depends(verify_memorization_write),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
     plan = await service.update_plan(
         user_id=user["_id"],
         plan_id=plan_id,
@@ -197,6 +188,11 @@ def serialize_memorization_session(session):
         "result": session["result"],
         "notes": session["notes"],
         "completed_at": session["completed_at"],
+        "recitation_session_id": (
+            str(session["recitation_session_id"])
+            if session.get("recitation_session_id") is not None
+            else None
+        ),
     }
 
 
@@ -211,17 +207,63 @@ async def create_memorization_session(
     request: Request,
     user=Depends(verify_memorization_write),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
 
-    session = await service.create_session(
-        user_id=user["_id"],
-        plan_id=plan_id,
-        session_type=payload.session_type,
-        result=payload.result,
-        notes=payload.notes,
-    )
+    if payload.recitation_session_id is not None:
+        plan = await service.repository.get_plan(
+            user_id=user["_id"],
+            plan_id=plan_id,
+        )
+        if plan is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Memorization plan not found",
+            )
+
+        validation_result = await service.validate_recitation_link(
+            user_id=user["_id"],
+            plan=plan,
+            recitation_session_id=payload.recitation_session_id,
+            recitation_repository=RecitationSessionRepository(
+                request.app.state.database
+            ),
+        )
+
+        if validation_result == "not_found":
+            raise HTTPException(
+                status_code=404,
+                detail="Recitation session not found",
+            )
+
+        if validation_result == "out_of_range":
+            raise HTTPException(
+                status_code=422,
+                detail="Recitation range is outside memorization plan",
+            )
+
+    try:
+        session = await service.create_session(
+            user_id=user["_id"],
+            plan_id=plan_id,
+            session_type=payload.session_type,
+            result=payload.result,
+            notes=payload.notes,
+            **(
+                {"recitation_session_id": payload.recitation_session_id}
+                if payload.recitation_session_id is not None
+                else {}
+            ),
+        )
+    except DuplicateKeyError as exc:
+        if (
+            payload.recitation_session_id is None
+            or "unique_recitation_session_link" not in str(exc)
+        ):
+            raise
+        raise HTTPException(
+            status_code=409,
+            detail="Recitation session already linked",
+        ) from exc
 
     if session is None:
         raise HTTPException(
@@ -242,9 +284,7 @@ async def list_memorization_sessions(
     limit: int = Query(default=50, ge=1, le=50),
     user=Depends(get_current_memorization_user),
 ):
-    service = MemorizationService(
-        MemorizationRepository(request.app.state.database)
-    )
+    service = MemorizationService(MemorizationRepository(request.app.state.database))
 
     sessions = await service.list_sessions(
         user_id=user["_id"],
@@ -258,7 +298,4 @@ async def list_memorization_sessions(
             detail="Memorization plan not found",
         )
 
-    return [
-        serialize_memorization_session(session)
-        for session in sessions
-    ]
+    return [serialize_memorization_session(session) for session in sessions]

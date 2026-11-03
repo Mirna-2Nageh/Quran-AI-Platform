@@ -114,9 +114,19 @@ def test_successful_connection_initializes_database_state() -> None:
     memorization_plans_collection.create_index.assert_awaited_once_with(
         [("user_id", 1), ("created_at", -1), ("_id", -1)]
     )
-    memorization_sessions_collection.create_index.assert_awaited_once_with(
+    memorization_sessions_collection.create_index.assert_any_await(
         [("user_id", 1), ("plan_id", 1), ("completed_at", -1), ("_id", -1)]
     )
+
+    memorization_sessions_collection.create_index.assert_any_await(
+        [("recitation_session_id", 1)],
+        unique=True,
+        partialFilterExpression={
+            "recitation_session_id": {"$type": "objectId"}
+        },
+        name="unique_recitation_session_link",
+    )
+    assert memorization_sessions_collection.create_index.await_count == 2
 
     halaqat_collection.create_index.assert_awaited_once_with(
         [("teacher_id", 1), ("status", 1)]

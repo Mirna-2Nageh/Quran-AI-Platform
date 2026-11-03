@@ -59,6 +59,7 @@ class MemorizationRepository:
         session_type: str,
         result: str,
         notes: str | None = None,
+        recitation_session_id: str | None = None,
     ):
         plan = await self.get_plan(
             user_id=user_id,
@@ -75,6 +76,11 @@ class MemorizationRepository:
             "notes": notes,
             "completed_at": self._current_timestamp(),
         }
+
+        if recitation_session_id is not None:
+            document["recitation_session_id"] = ObjectId(
+                recitation_session_id
+            )
 
         inserted = await self.sessions.insert_one(document)
         document["_id"] = inserted.inserted_id

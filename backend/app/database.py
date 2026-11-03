@@ -58,6 +58,15 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
         ]
     )
 
+    await app.state.database["memorization_sessions"].create_index(
+        [("recitation_session_id", 1)],
+        unique=True,
+        partialFilterExpression={
+            "recitation_session_id": {"$type": "objectId"}
+        },
+        name="unique_recitation_session_link",
+    )
+
     await app.state.database["halaqat"].create_index(
         [("teacher_id", 1), ("status", 1)]
     )
