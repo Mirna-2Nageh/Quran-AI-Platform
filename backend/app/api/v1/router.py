@@ -7,6 +7,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.halaqat import router as halaqat_router
 from app.api.v1.health import router as health_router
 from app.api.v1.memorization import router as memorization_router
+from app.api.v1.quran_reading import router as quran_reading_router
 from app.api.v1.recitation import router as recitation_router
 from app.api.v1.recitation_history import router as recitation_history_router
 
@@ -22,3 +23,4 @@ api_v1_router.include_router(memorization_router)
 api_v1_router.include_router(halaqat_router)
 
 api_v1_router.include_router(admin_users_router)
+api_v1_router.include_router(quran_reading_router)

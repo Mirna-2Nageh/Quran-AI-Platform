@@ -76,6 +76,15 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
         unique=True,
     )
 
+    await app.state.database["quran_bookmarks"].create_index(
+        [("user_id", 1), ("surah_number", 1), ("ayah_number", 1)],
+        unique=True,
+    )
+    await app.state.database["quran_reading_progress"].create_index(
+        "user_id",
+        unique=True,
+    )
+
     logger.info("Successfully connected to MongoDB.")
 
 
