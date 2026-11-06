@@ -31,10 +31,17 @@ jobs:
       - name: Ruff
         run: python -m ruff check backend scripts
 
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Unit tests
         run: |
           python -m pytest backend/tests \
             --ignore=backend/tests/test_recitation_http_integration.py \
+            --ignore=backend/tests/test_auth_real_integration.py \
+            --ignore=backend/tests/test_live_recitation_mongo_integration.py \
             -q
 
   frontend:
@@ -133,10 +140,34 @@ jobs:
             });
           '
 
+      - name: Verify MongoDB test connection
+        run: |
+          python - <<'CHECK'
+          import asyncio
+          import os
+          from pymongo import AsyncMongoClient
+
+          async def main():
+              client = AsyncMongoClient(
+                  os.environ["QURAN_AI_TEST_MONGO_URI"],
+                  serverSelectionTimeoutMS=5000,
+              )
+              try:
+                  result = await client.admin.command("ping")
+                  assert result["ok"] == 1
+                  print("MongoDB test connection: PASSED")
+              finally:
+                  await client.close()
+
+          asyncio.run(main())
+          CHECK
+
       - name: Integration test
         run: |
           python -m pytest \
             backend/tests/test_recitation_http_integration.py \
+            backend/tests/test_auth_real_integration.py \
+            backend/tests/test_live_recitation_mongo_integration.py \
             -v -rs -o strict_markers=true \
             --junitxml=integration-results.xml
 
