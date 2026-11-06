@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 
+from app.api.v1 import live_sessions
 from app.api.v1.admin_users import router as admin_users_router
 from app.api.v1.audio import router as audio_router
 from app.api.v1.audio_analysis import router as audio_analysis_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.halaqat import router as halaqat_router
 from app.api.v1.health import router as health_router
+from app.api.v1.live_correction import router as live_correction_router
 from app.api.v1.memorization import router as memorization_router
 from app.api.v1.quran_reading import router as quran_reading_router
 from app.api.v1.recitation import router as recitation_router
@@ -19,8 +21,11 @@ api_v1_router.include_router(recitation_router)
 api_v1_router.include_router(recitation_history_router)
 api_v1_router.include_router(audio_router)
 api_v1_router.include_router(audio_analysis_router)
+api_v1_router.include_router(live_correction_router)
 api_v1_router.include_router(memorization_router)
 api_v1_router.include_router(halaqat_router)
 
 api_v1_router.include_router(admin_users_router)
 api_v1_router.include_router(quran_reading_router)
+
+api_v1_router.include_router(live_sessions.router)

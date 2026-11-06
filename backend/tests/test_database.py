@@ -35,6 +35,8 @@ def test_successful_connection_initializes_database_state() -> None:
     users_collection = MagicMock()
     sessions_collection = MagicMock()
     login_attempts_collection = MagicMock()
+    live_recitation_collection = MagicMock()
+    live_recitation_collection.create_index = AsyncMock()
     recitation_sessions_collection = MagicMock()
     memorization_plans_collection = MagicMock()
     memorization_sessions_collection = MagicMock()
@@ -74,6 +76,7 @@ def test_successful_connection_initializes_database_state() -> None:
         "users": users_collection,
         "sessions": sessions_collection,
         "login_attempts": login_attempts_collection,
+        "live_recitation_sessions": live_recitation_collection,
         "recitation_sessions": recitation_sessions_collection,
         "memorization_plans": memorization_plans_collection,
         "memorization_sessions": memorization_sessions_collection,
@@ -104,6 +107,10 @@ def test_successful_connection_initializes_database_state() -> None:
     )
     login_attempts_collection.create_index.assert_awaited_once_with(
         "expires_at", expireAfterSeconds=0
+    )
+
+    live_recitation_collection.create_index.assert_awaited_once_with(
+        "session_id", unique=True
     )
 
     recitation_sessions_collection.create_index.assert_awaited_once_with(

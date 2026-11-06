@@ -1,6 +1,7 @@
 services:
   mongo:
     image: mongo:7.0
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--keyFile", "/etc/mongo-keyfile"]
     restart: unless-stopped
     ports:
       - "127.0.0.1:27018:27017"
@@ -9,6 +10,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD}
     volumes:
       - mongo_data:/data/db
+      - ./.mongo-secrets/keyfile:/etc/mongo-keyfile:ro
     healthcheck:
       test:
         - CMD-SHELL
@@ -25,6 +27,7 @@ services:
     restart: unless-stopped
     environment:
       MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?Set MONGO_APP_PASSWORD}
+      QURAN_AI_CSRF_SECRET: ${QURAN_AI_CSRF_SECRET:?Set CSRF secret}
       QURAN_AI_ENVIRONMENT: development
       QURAN_AI_DEBUG: "false"
       QURAN_AI_MONGO_DB_NAME: quran_ai

@@ -505,7 +505,14 @@ def test_update_plan_success():
     updated_at = datetime.now(timezone.utc)
 
     database = MagicMock()
+    from tests.memorization_transaction_mocks import configure_transaction
+    configure_transaction(database)
     collection = database["memorization_plans"]
+    collection.find_one = AsyncMock(return_value={
+        "_id": plan_id,
+        "user_id": "test-user",
+        "status": "active",
+    })
     collection.find_one_and_update = AsyncMock(return_value={
         "_id": plan_id,
         "user_id": "test-user",
@@ -540,6 +547,7 @@ def test_update_plan_success():
         assert args[0] == {
             "_id": plan_id,
             "user_id": "test-user",
+            "status": {"$ne": "archived"},
         }
         assert args[1]["$set"]["status"] == "completed"
         assert "updated_at" in args[1]["$set"]
@@ -588,7 +596,10 @@ def test_update_plan_not_found_returns_404():
     auth.verify_csrf = AsyncMock(return_value=True)
 
     database = MagicMock()
+    from tests.memorization_transaction_mocks import configure_transaction
+    configure_transaction(database)
     collection = database["memorization_plans"]
+    collection.find_one = AsyncMock(return_value=None)
     collection.find_one_and_update = AsyncMock(return_value=None)
     plan_id = ObjectId()
 
@@ -606,8 +617,9 @@ def test_update_plan_not_found_returns_404():
             )
 
         assert response.status_code == 404
-        query = collection.find_one_and_update.await_args.args[0]
-        assert query == {"_id": plan_id, "user_id": "test-user"}
+        collection.find_one.assert_awaited_once()
+        collection.find_one_and_update.assert_not_awaited()
+
     finally:
         app.state.database = original
         app.dependency_overrides.pop(get_auth_service, None)
@@ -724,10 +736,12 @@ def test_create_session_success():
     session_id = ObjectId()
 
     database = MagicMock()
+    from tests.memorization_transaction_mocks import configure_transaction
+    configure_transaction(database)
     plans = database["memorization_plans"]
     sessions = database["memorization_sessions"]
 
-    plans.find_one = AsyncMock(
+    plans.find_one_and_update = AsyncMock(
         return_value={
             "_id": plan_id,
             "user_id": "test-user",
@@ -766,10 +780,8 @@ def test_create_session_success():
         assert data["notes"] == "Surah Al-Fatiha"
         assert datetime.fromisoformat(data["completed_at"].replace("Z", "+00:00"))
 
-        plans.find_one.assert_awaited_once_with({
-            "_id": plan_id,
-            "user_id": "test-user",
-        })
+        plans.find_one_and_update.assert_awaited_once()
+        assert plans.find_one_and_update.await_args.kwargs["session"] is not None
 
         sessions.insert_one.assert_awaited_once()
         document = sessions.insert_one.await_args.args[0]

@@ -39,6 +39,10 @@ export function MemorizationPage() {
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editingId, setEditingId] = useState("");
+  const [editSurah, setEditSurah] = useState(1);
+  const [editStart, setEditStart] = useState(1);
+  const [editEnd, setEditEnd] = useState(1);
 
   const refresh = useCallback(async () => {
     const [nextPlans, nextProgress] = await Promise.all([
@@ -145,15 +149,64 @@ export function MemorizationPage() {
           }}>
             <h3>السورة {plan.surah_number} — الآيات {plan.start_ayah}–{plan.end_ayah}</h3>
             <label>الحالة
-              <select value={plan.status} disabled={busy}
-                onChange={(e) => void run(() =>
-                  updatePlan(plan.id, e.target.value as PlanStatus)
-                )}>
+              <select value={plan.status} disabled={busy || plan.status === "archived"}
+                onChange={(e) => {
+                  const nextStatus = e.target.value as PlanStatus;
+                  if (
+                    nextStatus === "archived" &&
+                    !window.confirm("هل تريد أرشفة هذه الخطة؟ ستبقى جلساتها السابقة محفوظة.")
+                  ) {
+                    e.target.value = plan.status;
+                    return;
+                  }
+                  void run(() => updatePlan(plan.id, nextStatus));
+                }}>
                 <option value="active">نشطة</option>
                 <option value="completed">مكتملة</option>
                 <option value="paused">متوقفة مؤقتًا</option>
+                <option value="archived">مؤرشفة</option>
               </select>
             </label>
+            {plan.status !== "archived" && (
+              <button type="button" disabled={busy} onClick={() => {
+                setEditingId(plan.id);
+                setEditSurah(plan.surah_number);
+                setEditStart(plan.start_ayah);
+                setEditEnd(plan.end_ayah);
+              }}>
+                تعديل الخطة
+              </button>
+            )}
+            {editingId === plan.id && (
+              <form onSubmit={(event) => {
+                event.preventDefault();
+                void run(async () => {
+                  await updatePlan(plan.id, {
+                    surah_number: editSurah,
+                    start_ayah: editStart,
+                    end_ayah: editEnd,
+                  });
+                  setEditingId("");
+                });
+              }}>
+                <label>رقم السورة
+                  <input type="number" min={1} max={114} required
+                    value={editSurah}
+                    onChange={(e) => setEditSurah(Number(e.target.value))} />
+                </label>
+                <label>من الآية
+                  <input type="number" min={1} required value={editStart}
+                    onChange={(e) => setEditStart(Number(e.target.value))} />
+                </label>
+                <label>إلى الآية
+                  <input type="number" min={editStart} required value={editEnd}
+                    onChange={(e) => setEditEnd(Number(e.target.value))} />
+                </label>
+                <button disabled={busy} type="submit">حفظ التعديلات</button>
+                <button type="button" disabled={busy}
+                  onClick={() => setEditingId("")}>إلغاء</button>
+              </form>
+            )}
             <button type="button" onClick={() => void openSessions(plan.id)}>
               عرض الجلسات
             </button>
@@ -173,6 +226,9 @@ export function MemorizationPage() {
             </p>
           ))}
 
+          {plans.find((plan) => plan.id === selectedId)?.status === "archived" ? (
+            <p>هذه الخطة مؤرشفة. يمكنك مراجعة جلساتها السابقة فقط.</p>
+          ) : (
           <form onSubmit={(event) => {
             event.preventDefault();
             void run(async () => {
@@ -207,6 +263,7 @@ export function MemorizationPage() {
             </label>
             <button disabled={busy} type="submit">حفظ الجلسة</button>
           </form>
+          )}
         </section>
       )}
     </main>

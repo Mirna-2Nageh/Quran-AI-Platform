@@ -25,6 +25,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8080",
     ]
 
+    csrf_secret: str | None = None
+
     mongo_uri: str | None = None
     mongo_db_name: str = "quran_ai"
     mongo_server_selection_timeout_ms: int = 5000
@@ -33,6 +35,9 @@ class Settings(BaseSettings):
     def validate_production_settings(self):
         if self.environment != "production":
             return self
+
+        if not self.csrf_secret or len(self.csrf_secret) < 64:
+            raise ValueError("Strong CSRF secret required in production")
 
         if not self.mongo_uri:
             raise ValueError("MongoDB URI is required in production")

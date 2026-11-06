@@ -157,11 +157,21 @@ async def update_memorization_plan(
     user=Depends(verify_memorization_write),
 ):
     service = MemorizationService(MemorizationRepository(request.app.state.database))
-    plan = await service.update_plan(
-        user_id=user["_id"],
-        plan_id=plan_id,
-        status=payload.status,
-    )
+    try:
+        plan = await service.update_plan(
+            user_id=user["_id"],
+            plan_id=plan_id,
+            **payload.model_dump(exclude_unset=True),
+        )
+    except ValueError as exc:
+        if str(exc) in {
+            "Archived plan cannot be edited",
+            "Cannot edit range after sessions exist",
+        }:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=422, detail="Invalid Quran range"
+        ) from exc
 
     if plan is None:
         raise HTTPException(
@@ -254,6 +264,13 @@ async def create_memorization_session(
                 else {}
             ),
         )
+    except ValueError as exc:
+        if str(exc) != "Cannot create sessions for archived plans":
+            raise
+        raise HTTPException(
+            status_code=409,
+            detail="Memorization plan is archived",
+        ) from exc
     except DuplicateKeyError as exc:
         if (
             payload.recitation_session_id is None

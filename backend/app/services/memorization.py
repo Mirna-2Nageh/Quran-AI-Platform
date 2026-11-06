@@ -41,11 +41,23 @@ class MemorizationService:
             limit=limit,
         )
 
-    async def update_plan(self, *, user_id, plan_id: str, status: str):
-        return await self.repository.update_plan(
+    async def update_plan(
+        self,
+        *,
+        user_id,
+        plan_id,
+        status=None,
+        surah_number=None,
+        start_ayah=None,
+        end_ayah=None,
+    ):
+        return await self.repository.update_plan_atomic(
             user_id=user_id,
             plan_id=plan_id,
             status=status,
+            surah_number=surah_number,
+            start_ayah=start_ayah,
+            end_ayah=end_ayah,
         )
 
     async def validate_recitation_link(
@@ -83,7 +95,7 @@ class MemorizationService:
         notes: str | None = None,
         recitation_session_id: str | None = None,
     ):
-        return await self.repository.create_session(
+        return await self.repository.create_session_atomic(
             user_id=user_id,
             plan_id=plan_id,
             session_type=session_type,

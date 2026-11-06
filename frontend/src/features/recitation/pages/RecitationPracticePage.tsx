@@ -1,6 +1,7 @@
 import { AudioRecorder } from "../components/AudioRecorder";
+import { LiveMemorizationRecorder } from "../components/LiveMemorizationRecorder";
 import { buildWordFeedback, tokenizeExpectedWords } from "../utils/wordFeedback";
-import type { AudioAnalysisResponse } from "../api/audio";
+import type { AudioAnalysisResponse, LiveCorrectionResponse } from "../api/audio";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { BookOpen, GitCompareArrows } from "lucide-react";
@@ -52,6 +53,7 @@ export function RecitationPracticePage() {
   const [ayahNumber, setAyahNumber] = useState(1);
   const [endAyahNumber, setEndAyahNumber] = useState(1);
   const [recognizedText, setRecognizedText] = useState("");
+  const [liveFeedback, setLiveFeedback] = useState<LiveCorrectionResponse | null>(null);
   const [result, setResult] = useState<AlignmentResponse | null>(null);
   const [recitationSessionId, setRecitationSessionId] = useState<string | null>(null);
   const [memorizationPlans, setMemorizationPlans] = useState<MemorizationPlan[]>([]);
@@ -120,6 +122,7 @@ export function RecitationPracticePage() {
 
 
   function invalidateAlignment() {
+    setLiveFeedback(null);
     alignmentRequestId.current += 1;
     setRecitationSessionId(null);
     setMemorizationPlans([]);
@@ -457,6 +460,68 @@ export function RecitationPracticePage() {
                 أو مخارج الحروف.
               </small>
             </div>
+          )}
+
+          {hasSelection && ayahNumber === endAyahNumber && (
+            <section className="recitation-live-section" aria-label="التسميع المباشر">
+              <LiveMemorizationRecorder
+                key={`${surahNumber}-${ayahNumber}`}
+                surahNumber={surahNumber}
+                ayahNumber={ayahNumber}
+                onFeedback={setLiveFeedback}
+                onFinalized={(sessionId) => {
+                  alignmentRequestId.current += 1;
+                  const requestId = alignmentRequestId.current;
+                  setRecitationSessionId(sessionId);
+                  setSelectedPlanId("");
+                  setLinkError("");
+                  setLinkSuccess(false);
+                  setMemorizationPlans([]);
+                  setPlansError("");
+                  void listPlans()
+                    .then((plans) => {
+                      if (requestId === alignmentRequestId.current) {
+                        setMemorizationPlans(plans);
+                      }
+                    })
+                    .catch((err: unknown) => {
+                      if (requestId === alignmentRequestId.current) {
+                        setPlansError(
+                          err instanceof Error ? err.message : "تعذر تحميل خطط الحفظ",
+                        );
+                      }
+                    });
+                }}
+              />
+
+              {liveFeedback && (
+                <div className="recitation-live-feedback" dir="rtl">
+                  <h3>نتيجة التسميع المباشر</h3>
+                  <p>النص المتعرف عليه: {liveFeedback.recognized_text || "لم يتم التعرف على كلمات"}</p>
+                  <div className="recitation-live-words" lang="ar">
+                    {liveFeedback.word_feedback.map((item) => (
+                      <span
+                        key={item.index}
+                        className={`recitation-feedback-word ${
+                          item.status === "review" ? "substituted" : item.status
+                        }`}
+                        title={
+                          item.status === "review"
+                            ? `تحتاج مراجعة: ${item.recognized_word ?? "غير معروف"}`
+                            : undefined
+                        }
+                      >
+                        {item.word}{" "}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="muted">
+                    النتائج مبدئية وتعتمد على التعرف الآلي على الكلام،
+                    وليست تقييمًا للتجويد أو مخارج الحروف.
+                  </p>
+                </div>
+              )}
+            </section>
           )}
 
           {hasSelection && (

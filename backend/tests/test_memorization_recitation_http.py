@@ -33,6 +33,8 @@ def test_recitation_memorization_link_http(recitation, expected_status):
     session_id = ObjectId()
 
     database = MagicMock()
+    from tests.memorization_transaction_mocks import configure_transaction
+    configure_transaction(database)
     plans = MagicMock()
     recitations = MagicMock()
     sessions = MagicMock()
@@ -51,6 +53,10 @@ def test_recitation_memorization_link_http(recitation, expected_status):
             "start_ayah": 2,
             "end_ayah": 5,
         }
+    )
+
+    plans.find_one_and_update = AsyncMock(
+        return_value=plans.find_one.return_value
     )
 
     if recitation == "missing_plan":

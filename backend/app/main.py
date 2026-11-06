@@ -7,18 +7,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_v1_router
 from app.config import get_settings
 from app.database import close_mongo_connection, connect_to_mongo
+from app.services.asr_worker_manager import PersistentASRManager
 
 settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    await connect_to_mongo(application, settings)
+    application.state.asr_manager = PersistentASRManager()
 
     try:
+        await connect_to_mongo(application, settings)
         yield
     finally:
-        await close_mongo_connection(application)
+        try:
+            await application.state.asr_manager.stop()
+        finally:
+            await close_mongo_connection(application)
 
 
 app = FastAPI(

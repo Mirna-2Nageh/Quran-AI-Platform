@@ -14,3 +14,5 @@ frontend/dist
 *.log
 tests/
 docs/
+
+!backend/tests/

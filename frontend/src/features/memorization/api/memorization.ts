@@ -1,7 +1,7 @@
 import { getCsrfToken } from "../../auth/api/auth";
 import { apiRequest } from "../../../services/api";
 
-export type PlanStatus = "active" | "completed" | "paused";
+export type PlanStatus = "active" | "completed" | "paused" | "archived";
 export type SessionType = "memorization" | "revision";
 export type SessionResult = "completed" | "needs_review" | "incomplete";
 
@@ -61,11 +61,16 @@ export const createPlan = (payload: {
   end_ayah: number;
 }) => writeRequest<MemorizationPlan>(`${BASE}/plans`, "POST", payload);
 
-export const updatePlan = (id: string, status: PlanStatus) =>
+export type PlanUpdate = Partial<Pick<
+  MemorizationPlan,
+  "status" | "surah_number" | "start_ayah" | "end_ayah"
+>>;
+
+export const updatePlan = (id: string, update: PlanStatus | PlanUpdate) =>
   writeRequest<MemorizationPlan>(
     `${BASE}/plans/${encodeURIComponent(id)}`,
     "PATCH",
-    { status },
+    typeof update === "string" ? { status: update } : update,
   );
 
 export const listSessions = (id: string) =>
