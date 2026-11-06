@@ -75,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      QURAN_AI_CSRF_SECRET: "ci-only-csrf-secret-2026-abcdefghijklmnopqrstuvwxyz-0123456789-ABCDEF"
       QURAN_AI_TEST_MONGO_URI: mongodb://quran_test:ci_test_password@127.0.0.1:27017/quran_ai_ci_test?authSource=quran_ai_ci_test&replicaSet=rs0&directConnection=true
 
     steps:
