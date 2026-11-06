@@ -1,10 +1,9 @@
 """Real MongoDB integration test for live recitation finalization."""
 
 import os
-
-import pytest
 from uuid import uuid4
 
+import pytest
 from app.repositories.live_recitation_sessions import (
     LiveRecitationSessionRepository,
 )

@@ -4,12 +4,11 @@ import os
 from uuid import uuid4
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-from pymongo import AsyncMongoClient
-
 from app.api.v1.auth import get_auth_service
 from app.main import app
 from app.services.auth import AuthService
+from httpx import ASGITransport, AsyncClient
+from pymongo import AsyncMongoClient
 
 
 @pytest.mark.asyncio
@@ -115,6 +114,7 @@ async def test_csrf_refresh_preserves_token_across_tabs():
 @pytest.mark.asyncio
 async def test_csrf_session_security():
     from datetime import datetime, timedelta, timezone
+
     from app.security.sessions import hash_session_token
 
     mongo = AsyncMongoClient(os.environ["QURAN_AI_TEST_MONGO_URI"])
