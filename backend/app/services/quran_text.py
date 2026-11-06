@@ -1,14 +1,25 @@
 """Read validated Quran text from the local Uthmani dataset."""
 
 import json
+import os
 from functools import lru_cache
 from pathlib import Path
 
-DATASET_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "data"
-    / "quran"
-    / "uthmani.json"
+_dataset_candidates = []
+
+if os.environ.get("QURAN_AI_DATA_ROOT"):
+    _dataset_candidates.append(
+        Path(os.environ["QURAN_AI_DATA_ROOT"]) / "quran" / "uthmani.json"
+    )
+
+_dataset_candidates.extend([
+    Path("/app/data/quran/uthmani.json"),
+    Path(__file__).resolve().parents[2] / "data" / "quran" / "uthmani.json",
+])
+
+DATASET_PATH = next(
+    (path for path in _dataset_candidates if path.is_file()),
+    _dataset_candidates[-1],
 )
 
 

@@ -41,6 +41,10 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
         "expires_at", expireAfterSeconds=0
     )
 
+    await app.state.database["live_recitation_sessions"].create_index(
+        "session_id", unique=True
+    )
+
     await app.state.database["recitation_sessions"].create_index(
         [("user_id", 1), ("created_at", -1), ("_id", -1)]
     )
@@ -58,9 +62,14 @@ async def connect_to_mongo(app: FastAPI, settings: Settings) -> None:
         ]
     )
 
-    await app.state.database["halaqat"].create_index(
-        [("teacher_id", 1), ("status", 1)]
+    await app.state.database["memorization_sessions"].create_index(
+        [("recitation_session_id", 1)],
+        unique=True,
+        partialFilterExpression={"recitation_session_id": {"$type": "objectId"}},
+        name="unique_recitation_session_link",
     )
+
+    await app.state.database["halaqat"].create_index([("teacher_id", 1), ("status", 1)])
     await app.state.database["halaqa_enrollments"].create_index(
         [("halaqa_id", 1), ("student_id", 1)],
         unique=True,

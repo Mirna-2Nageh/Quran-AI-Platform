@@ -164,6 +164,7 @@ def test_update_plan_is_user_scoped():
     assert kwargs.args[0] == {
         "_id": plan_id,
         "user_id": user_id,
+        "status": {"$ne": "archived"},
     }
     assert kwargs.args[1]["$set"]["status"] == "completed"
     assert kwargs.args[1]["$set"]["updated_at"].microsecond % 1000 == 0

@@ -30,10 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signUp(payload: RegisterPayload) {
     await register(payload);
-    await signIn({
-      email: payload.email,
-      password: payload.password,
-    });
   }
 
   async function signOut() {

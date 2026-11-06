@@ -25,7 +25,7 @@ export function RegisterPage() {
         email,
         password,
       });
-      navigate("/dashboard", { replace: true });
+      navigate("/login", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر إنشاء الحساب");
     } finally {

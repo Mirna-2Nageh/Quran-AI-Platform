@@ -4,9 +4,10 @@
 from datetime import datetime
 from typing import Literal
 
+from bson import ObjectId
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-PlanStatus = Literal["active", "completed", "paused"]
+PlanStatus = Literal["active", "completed", "paused", "archived"]
 SessionType = Literal["memorization", "revision"]
 SessionResult = Literal["completed", "needs_review", "incomplete"]
 
@@ -28,7 +29,19 @@ class MemorizationPlanCreate(BaseModel):
 class MemorizationPlanUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    status: PlanStatus
+    status: PlanStatus | None = None
+    surah_number: int | None = Field(default=None, ge=1, le=114)
+    start_ayah: int | None = Field(default=None, ge=1)
+    end_ayah: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def validate_update(self):
+        fields = self.model_fields_set
+        if not fields:
+            raise ValueError("At least one field must be provided")
+        if any(getattr(self, field) is None for field in fields):
+            raise ValueError("Update fields cannot be null")
+        return self
 
 
 class MemorizationPlanResponse(BaseModel):
@@ -47,6 +60,16 @@ class MemorizationSessionCreate(BaseModel):
     session_type: SessionType
     result: SessionResult
     notes: str | None = Field(default=None, max_length=1000)
+    recitation_session_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_recitation_session_id(self):
+        if (
+            self.recitation_session_id is not None
+            and not ObjectId.is_valid(self.recitation_session_id)
+        ):
+            raise ValueError("Invalid recitation session ID")
+        return self
 
 
 class MemorizationSessionResponse(BaseModel):
@@ -56,6 +79,7 @@ class MemorizationSessionResponse(BaseModel):
     result: SessionResult
     notes: str | None
     completed_at: datetime
+    recitation_session_id: str | None = None
 
 
 class MemorizationProgressResponse(BaseModel):

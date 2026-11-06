@@ -35,6 +35,8 @@ def test_successful_connection_initializes_database_state() -> None:
     users_collection = MagicMock()
     sessions_collection = MagicMock()
     login_attempts_collection = MagicMock()
+    live_recitation_collection = MagicMock()
+    live_recitation_collection.create_index = AsyncMock()
     recitation_sessions_collection = MagicMock()
     memorization_plans_collection = MagicMock()
     memorization_sessions_collection = MagicMock()
@@ -74,6 +76,7 @@ def test_successful_connection_initializes_database_state() -> None:
         "users": users_collection,
         "sessions": sessions_collection,
         "login_attempts": login_attempts_collection,
+        "live_recitation_sessions": live_recitation_collection,
         "recitation_sessions": recitation_sessions_collection,
         "memorization_plans": memorization_plans_collection,
         "memorization_sessions": memorization_sessions_collection,
@@ -106,6 +109,10 @@ def test_successful_connection_initializes_database_state() -> None:
         "expires_at", expireAfterSeconds=0
     )
 
+    live_recitation_collection.create_index.assert_awaited_once_with(
+        "session_id", unique=True
+    )
+
     recitation_sessions_collection.create_index.assert_awaited_once_with(
         [("user_id", 1), ("created_at", -1), ("_id", -1)]
     )
@@ -114,9 +121,19 @@ def test_successful_connection_initializes_database_state() -> None:
     memorization_plans_collection.create_index.assert_awaited_once_with(
         [("user_id", 1), ("created_at", -1), ("_id", -1)]
     )
-    memorization_sessions_collection.create_index.assert_awaited_once_with(
+    memorization_sessions_collection.create_index.assert_any_await(
         [("user_id", 1), ("plan_id", 1), ("completed_at", -1), ("_id", -1)]
     )
+
+    memorization_sessions_collection.create_index.assert_any_await(
+        [("recitation_session_id", 1)],
+        unique=True,
+        partialFilterExpression={
+            "recitation_session_id": {"$type": "objectId"}
+        },
+        name="unique_recitation_session_link",
+    )
+    assert memorization_sessions_collection.create_index.await_count == 2
 
     halaqat_collection.create_index.assert_awaited_once_with(
         [("teacher_id", 1), ("status", 1)]

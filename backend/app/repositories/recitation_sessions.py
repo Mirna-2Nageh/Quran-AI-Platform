@@ -2,6 +2,8 @@
 
 from datetime import datetime, timezone
 
+from bson import ObjectId
+
 
 class RecitationSessionRepository:
     @staticmethod
@@ -40,6 +42,16 @@ class RecitationSessionRepository:
         document["_id"] = result.inserted_id
 
         return document
+
+    async def get_by_id_for_user(self, *, user_id, session_id: str):
+        """Retrieve a recitation session owned by the user."""
+        if not ObjectId.is_valid(session_id):
+            return None
+
+        return await self.collection.find_one({
+            "_id": ObjectId(session_id),
+            "user_id": user_id,
+        })
 
     async def list_by_user(self, user_id, limit: int = 20):
         cursor = (

@@ -15,3 +15,18 @@ def hash_session_token(token: str) -> str:
 def generate_csrf_token() -> str:
     """Generate a random CSRF token for an authenticated session."""
     return secrets.token_urlsafe(32)
+
+
+def derive_csrf_token(session_token: str, secret: str) -> str:
+    """Derive a stable, session-bound CSRF token using HMAC-SHA256."""
+    import hmac
+
+    if not session_token or not secret:
+        raise ValueError("Session token and CSRF secret are required")
+
+    digest = hmac.new(
+        secret.encode("utf-8"),
+        ("quran-ai:csrf:v1:" + session_token).encode("utf-8"),
+        hashlib.sha256,
+    )
+    return digest.hexdigest()

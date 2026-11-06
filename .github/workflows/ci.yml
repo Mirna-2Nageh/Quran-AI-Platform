@@ -31,10 +31,17 @@ jobs:
       - name: Ruff
         run: python -m ruff check backend scripts
 
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
       - name: Unit tests
         run: |
           python -m pytest backend/tests \
             --ignore=backend/tests/test_recitation_http_integration.py \
+            --ignore=backend/tests/test_auth_real_integration.py \
+            --ignore=backend/tests/test_live_recitation_mongo_integration.py \
             -q
 
   frontend:
@@ -67,19 +74,9 @@ jobs:
     name: MongoDB Integration
     runs-on: ubuntu-latest
 
-    services:
-      mongo:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
-      QURAN_AI_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+      QURAN_AI_CSRF_SECRET: "ci-only-csrf-secret-2026-abcdefghijklmnopqrstuvwxyz-0123456789-ABCDEF"
+      QURAN_AI_TEST_MONGO_URI: mongodb://quran_test:ci_test_password@127.0.0.1:27017/quran_ai_ci_test?authSource=quran_ai_ci_test&replicaSet=rs0&directConnection=true
 
     steps:
       - uses: actions/checkout@v4
@@ -96,10 +93,82 @@ jobs:
       - name: Prepare Quran dataset
         run: python scripts/setup_quran_dataset.py
 
+      - name: Start isolated MongoDB
+        run: |
+          docker run -d \
+            --name quran-ci-mongo \
+            -p 127.0.0.1:27017:27017 \
+            mongo:7.0 \
+            mongod --replSet rs0 --bind_ip_all
+
+      - name: Configure MongoDB replica set and test user
+        run: |
+          set -euo pipefail
+
+          for i in $(seq 1 30); do
+            if docker exec quran-ci-mongo mongosh --quiet \
+              --eval 'db.adminCommand({ping: 1}).ok' 2>/dev/null | grep -qx 1; then
+              break
+            fi
+            sleep 2
+          done
+
+          docker exec quran-ci-mongo mongosh --quiet --eval '
+            rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "localhost:27017" }]
+            })
+          '
+
+          ready=false
+          for i in $(seq 1 30); do
+            if docker exec quran-ci-mongo mongosh --quiet \
+              --eval 'db.hello().isWritablePrimary' 2>/dev/null | grep -qx true; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+
+          test "$ready" = true
+
+          docker exec quran-ci-mongo mongosh --quiet --eval '
+            db = db.getSiblingDB("quran_ai_ci_test");
+            db.createUser({
+              user: "quran_test",
+              pwd: "ci_test_password",
+              roles: [{ role: "readWrite", db: "quran_ai_ci_test" }]
+            });
+          '
+
+      - name: Verify MongoDB test connection
+        run: |
+          python - <<'CHECK'
+          import asyncio
+          import os
+          from pymongo import AsyncMongoClient
+
+          async def main():
+              client = AsyncMongoClient(
+                  os.environ["QURAN_AI_TEST_MONGO_URI"],
+                  serverSelectionTimeoutMS=5000,
+              )
+              try:
+                  result = await client.admin.command("ping")
+                  assert result["ok"] == 1
+                  print("MongoDB test connection: PASSED")
+              finally:
+                  await client.close()
+
+          asyncio.run(main())
+          CHECK
+
       - name: Integration test
         run: |
           python -m pytest \
             backend/tests/test_recitation_http_integration.py \
+            backend/tests/test_auth_real_integration.py \
+            backend/tests/test_live_recitation_mongo_integration.py \
             -v -rs -o strict_markers=true \
             --junitxml=integration-results.xml
 

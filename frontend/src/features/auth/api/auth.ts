@@ -19,8 +19,7 @@ export interface RegisterPayload {
   password: string;
 }
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL !== undefined ? import.meta.env.VITE_API_BASE_URL : "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 let csrfToken: string | null = null;
 
@@ -55,20 +54,31 @@ export function getCurrentUser(): Promise<User> {
   return apiRequest<User>("/api/v1/auth/me");
 }
 
+let csrfRefreshPromise: Promise<void> | null = null;
+
 export async function refreshCsrf(): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/csrf`, {
-    credentials: "include",
-  });
+  if (!csrfRefreshPromise) {
+    csrfRefreshPromise = (async () => {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/csrf`, {
+        credentials: "include",
+      });
 
-  if (!response.ok) {
-    throw new Error("Unable to refresh CSRF token");
+      if (!response.ok) {
+        throw new Error("Unable to refresh CSRF token");
+      }
+
+      const token = response.headers.get("X-CSRF-Token");
+      if (!token) {
+        throw new Error("CSRF token missing");
+      }
+
+      csrfToken = token;
+    })().finally(() => {
+      csrfRefreshPromise = null;
+    });
   }
 
-  csrfToken = response.headers.get("X-CSRF-Token");
-
-  if (!csrfToken) {
-    throw new Error("CSRF token missing");
-  }
+  return csrfRefreshPromise;
 }
 
 export async function logout(): Promise<void> {
@@ -87,7 +97,9 @@ export async function logout(): Promise<void> {
 }
 
 export async function getCsrfToken(): Promise<string> {
-  await refreshCsrf();
+  if (!csrfToken) {
+    await refreshCsrf();
+  }
 
   if (!csrfToken) {
     throw new Error("CSRF token unavailable");

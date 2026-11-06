@@ -39,7 +39,7 @@ def get_test_mongo_uri() -> str:
     return (
         f"mongodb://{username}:{password}"
         f"@127.0.0.1:27018/{TEST_DATABASE}"
-        f"?authSource={TEST_DATABASE}"
+        f"?authSource={TEST_DATABASE}&directConnection=true"
     )
 
 

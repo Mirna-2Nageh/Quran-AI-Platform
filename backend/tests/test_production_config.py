@@ -39,6 +39,7 @@ def test_production_accepts_https_origin():
         environment="production",
         mongo_uri="mongodb://localhost:27017",
         allowed_origins=["https://example.com"],
+        csrf_secret="a" * 64,
     )
 
     assert settings.environment == "production"

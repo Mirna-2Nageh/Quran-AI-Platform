@@ -41,12 +41,49 @@ class MemorizationService:
             limit=limit,
         )
 
-    async def update_plan(self, *, user_id, plan_id: str, status: str):
-        return await self.repository.update_plan(
+    async def update_plan(
+        self,
+        *,
+        user_id,
+        plan_id,
+        status=None,
+        surah_number=None,
+        start_ayah=None,
+        end_ayah=None,
+    ):
+        return await self.repository.update_plan_atomic(
             user_id=user_id,
             plan_id=plan_id,
             status=status,
+            surah_number=surah_number,
+            start_ayah=start_ayah,
+            end_ayah=end_ayah,
         )
+
+    async def validate_recitation_link(
+        self,
+        *,
+        user_id,
+        plan: dict,
+        recitation_session_id: str,
+        recitation_repository,
+    ) -> str:
+        recitation = await recitation_repository.get_by_id_for_user(
+            user_id=user_id,
+            session_id=recitation_session_id,
+        )
+
+        if recitation is None:
+            return "not_found"
+
+        if (
+            recitation["surah_number"] != plan["surah_number"]
+            or recitation["ayah_number"] < plan["start_ayah"]
+            or recitation["end_ayah_number"] > plan["end_ayah"]
+        ):
+            return "out_of_range"
+
+        return "valid"
 
     async def create_session(
         self,
@@ -56,13 +93,18 @@ class MemorizationService:
         session_type: str,
         result: str,
         notes: str | None = None,
+        recitation_session_id: str | None = None,
     ):
-        return await self.repository.create_session(
+        return await self.repository.create_session_atomic(
             user_id=user_id,
             plan_id=plan_id,
             session_type=session_type,
             result=result,
             notes=notes,
+            **(
+                {"recitation_session_id": recitation_session_id}
+                if recitation_session_id is not None else {}
+            ),
         )
 
     async def list_sessions(
