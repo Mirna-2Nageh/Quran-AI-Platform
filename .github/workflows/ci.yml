@@ -67,19 +67,8 @@ jobs:
     name: MongoDB Integration
     runs-on: ubuntu-latest
 
-    services:
-      mongo:
-        image: mongo:7.0
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1})'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
-      QURAN_AI_TEST_MONGO_URI: mongodb://127.0.0.1:27017
+      QURAN_AI_TEST_MONGO_URI: mongodb://quran_test:ci_test_password@127.0.0.1:27017/quran_ai_ci_test?authSource=quran_ai_ci_test&replicaSet=rs0&directConnection=true
 
     steps:
       - uses: actions/checkout@v4
@@ -95,6 +84,54 @@ jobs:
 
       - name: Prepare Quran dataset
         run: python scripts/setup_quran_dataset.py
+
+      - name: Start isolated MongoDB
+        run: |
+          docker run -d \
+            --name quran-ci-mongo \
+            -p 127.0.0.1:27017:27017 \
+            mongo:7.0 \
+            mongod --replSet rs0 --bind_ip_all
+
+      - name: Configure MongoDB replica set and test user
+        run: |
+          set -euo pipefail
+
+          for i in $(seq 1 30); do
+            if docker exec quran-ci-mongo mongosh --quiet \
+              --eval 'db.adminCommand({ping: 1}).ok' 2>/dev/null | grep -qx 1; then
+              break
+            fi
+            sleep 2
+          done
+
+          docker exec quran-ci-mongo mongosh --quiet --eval '
+            rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "localhost:27017" }]
+            })
+          '
+
+          ready=false
+          for i in $(seq 1 30); do
+            if docker exec quran-ci-mongo mongosh --quiet \
+              --eval 'db.hello().isWritablePrimary' 2>/dev/null | grep -qx true; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+
+          test "$ready" = true
+
+          docker exec quran-ci-mongo mongosh --quiet --eval '
+            db = db.getSiblingDB("quran_ai_ci_test");
+            db.createUser({
+              user: "quran_test",
+              pwd: "ci_test_password",
+              roles: [{ role: "readWrite", db: "quran_ai_ci_test" }]
+            });
+          '
 
       - name: Integration test
         run: |
